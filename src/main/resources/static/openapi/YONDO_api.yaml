@@ -2,8 +2,8 @@ openapi: 3.0.3
 info:
   title: KCC API
   description: |
-    LoggingController에서 제공하는 사용자 관련 API 명세  
-    (질문에서 주어진 7개 기능: 로그인, 비밀번호 초기화, 회원가입, 회원정보 수정, 토큰 재발급, 로그아웃 및 토큰 만료 시 기본 응답)
+    RESTful API 설계 가이드에 맞춰 수정된 사용자 인증/정보 관련 API 명세
+    (로그인, 로그아웃, 비밀번호 초기화, 회원가입, 회원정보 수정, 토큰 재발급 등)
   version: "1.0.0"
 
 servers:
@@ -11,13 +11,16 @@ servers:
     description: 로컬 서버 (개발용)
 
 paths:
-  /api/auth/sign-in:
+  ########################################
+  # 1) 로그인: POST /api/sessions
+  ########################################
+  /api/sessions:
     post:
       summary: "로그인 (JWT 발급)"
       description: |
-        * identifier(아이디)와 password를 받아 인증 후 JWT 토큰을 발급합니다.
-        * 성공 시 사용자 정보(`user`)와 `token`을 함께 반환합니다.
-      operationId: signIn
+        * 사용자 식별자(`identifier`)와 비밀번호(`password`)를 받아 인증 후 JWT 토큰 발급.
+        * 성공 시 사용자 정보(`user`)와 `token`을 함께 반환.
+      operationId: login
       requestBody:
         required: true
         description: "로그인에 필요한 JSON 데이터"
@@ -74,7 +77,7 @@ paths:
                       identifier: "testUser"
                       name: "홍길동"
         "401":
-          description: "로그인 실패"
+          description: "로그인 실패 (자격 증명 불일치)"
           content:
             application/json:
               schema:
@@ -89,35 +92,27 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /api/auth/init-password:
-    post:
-      summary: "비밀번호 초기화"
+    delete:
+      summary: "로그아웃"
       description: |
-        * 식별자(`identifier`)와 토큰(`token`)이 필요합니다.  
-        * 헤더에 Access Token을 포함해야 할 수도 있습니다.
-      operationId: initPassword
-      security:
-        - bearerAuth: []  # 토큰이 필요한 경우에만 사용
+        * 헤더나 바디로 사용자 식별자·토큰 정보를 받아 세션(Refresh Token) 무효화 등 로그아웃 처리.
+        * 필요에 따라 `identifier`를 바디로 받거나, 클라이언트에 저장된 Refresh Token을 삭제할 수도 있습니다.
+      operationId: logout
       requestBody:
-        required: true
-        description: "비밀번호 초기화를 위한 JSON 데이터"
+        required: false
+        description: "로그아웃에 필요한 JSON 데이터(선택)"
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/InitPasswordRequest"
+              $ref: "#/components/schemas/SignOutRequest"
             examples:
               normal:
-                summary: "정상 입력 예시"
-                value:
-                  identifier: "testUser"
-                  token: "인증용_임시_토큰_또는_코드"
-              missingToken:
-                summary: "token 누락"
+                summary: "정상 로그아웃 예시"
                 value:
                   identifier: "testUser"
       responses:
         "200":
-          description: "비밀번호 초기화 성공"
+          description: "로그아웃 성공"
           content:
             application/json:
               schema:
@@ -131,29 +126,21 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: "비밀번호 초기화 성공"
-        "401":
-          description: "비밀번호 초기화 실패"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                initFail:
-                  summary: "실패 예시"
-                  value:
-                    status: 401
-                    success: false
-                    message: "비밀번호 초기화 실패"
+                    example: "로그아웃 성공"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /api/auth/sign-up:
+
+  ########################################
+  # 2) 회원가입: POST /api/users
+  ########################################
+  /api/users:
     post:
       summary: "회원가입"
       description: |
-        * 다양한 사용자 정보를 입력받아 회원가입을 진행합니다.
-        * 동일 아이디(identifier)나 전화번호(phone)가 이미 존재하는 경우 `409` 에러를 반환합니다.
+        * 다양한 사용자 정보를 입력받아 회원가입 진행.
+        * 성공 시 새 사용자 리소스가 생성되므로, 일반적으로 201(Created)을 반환함.
+        * 아이디(identifier)나 전화번호(콜)가 이미 존재하면 409(CONFLICT) 에러 반환.
       operationId: signUp
       requestBody:
         required: true
@@ -166,19 +153,19 @@ paths:
               normal:
                 summary: "정상 회원가입 예시"
                 value:
-                  identifier: "newUser"
-                  password: "mypassword"
-                  name: "새 유저"
-                  gender: "F"
-                  phone: "010-1111-2222"
-                  branch: "서울점"
-                  age: 25
-                  career: 3
-                  entrap: false
-                  refund_account: "110-123-456789"
-                  receipt_info: true
-                  trainer_id: 1
-                  refund_bank: "KB은행"
+                  "identifier": "newUser"
+                  "password": "mypassword"
+                  "name": "새 유저"
+                  "gender": "F"
+                  "phone": "010-1111-2222"
+                  "branch": "서울점"
+                  "age": 25
+                  "career": 3
+                  "ntrp": 3.5
+                  "refund_account": "110-123-456789"
+                  "refund_bank": "KB국민은행"
+                  "receipt_info": "현금영수증"
+                  "trainer_id": "dh"
               duplicateIdentifier:
                 summary: "이미 존재하는 identifier"
                 value:
@@ -186,8 +173,8 @@ paths:
                   password: "mypassword"
                   name: "기존 유저"
       responses:
-        "200":
-          description: "회원가입 성공"
+        "201":
+          description: "회원가입 성공(새로운 사용자 리소스 생성)"
           content:
             application/json:
               schema:
@@ -195,7 +182,7 @@ paths:
                 properties:
                   status:
                     type: integer
-                    example: 200
+                    example: 201
                   success:
                     type: boolean
                     example: true
@@ -206,7 +193,7 @@ paths:
                 success:
                   summary: "회원가입 성공 예시"
                   value:
-                    status: 200
+                    status: 201
                     success: true
                     message: "회원가입 성공"
         "409":
@@ -231,16 +218,27 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /api/auth/modify-info:
+
+  ########################################
+  # 3) 회원정보 수정: PATCH /api/users/{identifier}
+  ########################################
+  /api/users/{identifier}:
     patch:
       summary: "회원 정보 수정"
       description: |
-        * 기본적으로 `password`, `refund_account`, `receipt_info`, `refund_bank`만 수정 가능  
-        * 관리자인 경우 모든 필드를 수정할 수 있습니다.  
-        * 권한 없는 필드 수정 요청 시 403 오류
+        * 기본적으로 `password`, `refund_account`, `receipt_info`, `refund_bank`만 수정 가능.
+        * 관리자인 경우 더 많은 필드 수정 가능(예: identifier, name, phone 등).
+        * 권한 없는 필드 수정 요청 시 403 오류.
       operationId: modifyInfo
       security:
         - bearerAuth: []
+      parameters:
+        - name: identifier
+          in: path
+          required: true
+          description: "수정 대상 사용자 식별자 (ex: testUser)"
+          schema:
+            type: string
       requestBody:
         required: true
         description: "수정할 정보(JSON)"
@@ -296,12 +294,86 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /api/auth/token:
+
+  ########################################
+  # 4) 비밀번호 초기화: PATCH /api/users/{identifier}/password
+  ########################################
+  /api/users/{identifier}/password:
+    patch:
+      summary: "비밀번호 초기화"
+      description: |
+        * 식별자(`identifier`) 경로 파라미터와 추가 인증 토큰(임시 코드를 body에) 필요.
+        * 헤더에 Access Token을 포함해야 할 수도 있음(서버 정책에 따라).
+      operationId: initPassword
+      security:
+        - bearerAuth: []  # 토큰 필요 시
+      parameters:
+        - name: identifier
+          in: path
+          required: true
+          description: "비밀번호를 초기화할 사용자 식별자"
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: "비밀번호 초기화를 위한 JSON 데이터(임시 토큰/코드 등)"
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InitPasswordRequest"
+            examples:
+              normal:
+                summary: "정상 입력 예시"
+                value:
+                  token: "인증용_임시_토큰_또는_코드"
+              missingToken:
+                summary: "token 누락"
+                value:
+                  # identifier는 URL 경로로 전달
+                  token: ""
+      responses:
+        "200":
+          description: "비밀번호 초기화 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "비밀번호 초기화 성공"
+        "401":
+          description: "비밀번호 초기화 실패 (토큰 불일치 등)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                initFail:
+                  summary: "실패 예시"
+                  value:
+                    status: 401
+                    success: false
+                    message: "비밀번호 초기화 실패"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+
+  ########################################
+  # 5) 토큰 재발급: POST /api/tokens/refresh
+  ########################################
+  /api/tokens/refresh:
     post:
       summary: "Refresh Token을 사용한 Access Token 재발급"
       description: |
-        * 만료된 Access Token을 갱신하기 위해 Refresh Token(RT)을 사용합니다.
-        * 성공 시 새로운 Access Token(`token`)과 갱신된 Refresh Token(`RT`)을 반환합니다.
+        * 만료된 Access Token 갱신을 위해 Refresh Token(RT) 사용.
+        * 성공 시 새로운 Access Token(`token`)과 갱신된 Refresh Token(`RT`) 반환.
       operationId: reIssueToken
       requestBody:
         required: true
@@ -339,7 +411,7 @@ paths:
                     type: string
                     example: "토큰 재발급 성공"
         "401":
-          description: "토큰 재발급 실패"
+          description: "토큰 재발급 실패 (Refresh Token 검증 실패 등)"
           content:
             application/json:
               schema:
@@ -355,44 +427,6 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /api/auth/sign-out:
-    post:
-      summary: "로그아웃"
-      description: |
-        * identifier(아이디)를 받아 로그아웃 처리
-      operationId: signOut
-      requestBody:
-        required: true
-        description: "로그아웃에 필요한 JSON 데이터"
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SignOutRequest"
-            examples:
-              normal:
-                summary: "정상 로그아웃 예시"
-                value:
-                  identifier: "testUser"
-      responses:
-        "200":
-          description: "로그아웃 성공"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: integer
-                    example: 200
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: "로그아웃 성공"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
 
 components:
   securitySchemes:
@@ -402,6 +436,9 @@ components:
       bearerFormat: JWT
 
   schemas:
+    ########################################
+    # 요청 스키마들
+    ########################################
     SignInRequest:
       type: object
       required:
@@ -419,12 +456,8 @@ components:
     InitPasswordRequest:
       type: object
       required:
-        - identifier
         - token
       properties:
-        identifier:
-          type: string
-          example: "testUser"
         token:
           type: string
           example: "인증용_임시_토큰_또는_코드"
@@ -503,7 +536,7 @@ components:
         refund_bank:
           type: string
           example: "우리은행"
-        # 관리자 권한 시 추가 필드를 수정할 수도 있음 (identifier, name, phone, branch 등)
+        # 관리자 권한 시 identifier, name, phone, branch 등 추가 필드도 수정 가능
 
     TokenRefreshRequest:
       type: object
@@ -523,6 +556,9 @@ components:
           type: string
           example: "testUser"
 
+    ########################################
+    # 에러 공통 응답 스키마
+    ########################################
     ErrorResponse:
       type: object
       properties:
@@ -540,6 +576,9 @@ components:
           example: "T001"
       description: "에러 응답 공통 구조"
 
+  ########################################
+  # 공통 응답 (서버 오류 등)
+  ########################################
   responses:
     InternalServerError:
       description: "서버 내부 오류"
