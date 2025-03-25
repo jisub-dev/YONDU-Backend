@@ -153,19 +153,19 @@ paths:
               normal:
                 summary: "정상 회원가입 예시"
                 value:
-                  "identifier": "newUser",
-                  "password": "mypassword",
-                  "name": "새 유저",
-                  "gender": "F",
-                  "phone": "010-1111-2222",
-                  "branch": "서울점",
-                  "age": 25,
-                  "career": 3,
-                  "ntrp": 3.5,
-                  "refund_account": "110-123-456789",
-                  "refund_bank": "KB국민은행",
-                  "receipt_info": "현금영수증",
-                  "trainer_id": 1
+                  identifier: "newUser"
+                  password: "mypassword"
+                  name: "새 유저"
+                  gender: "F"
+                  phone: "010-1111-2222"
+                  branch: "서울점"
+                  age: 25
+                  career: 3
+                  entrap: false
+                  refund_account: "110-123-456789"
+                  receipt_info: true
+                  trainer_id: 1
+                  refund_bank: "KB은행"
               duplicateIdentifier:
                 summary: "이미 존재하는 identifier"
                 value:
