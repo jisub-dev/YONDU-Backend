@@ -61,7 +61,7 @@ public class LoggingController {
                 ));
             }
             // JWT 액세스 토큰 및 리프레시 토큰 생성
-            String token = jwtService.generateToken(user.getIdentifier());
+            String token = jwtService.generateToken(user.getIdentifier(), user.getRole());
             String refreshToken = jwtService.generateRefreshToken(user.getIdentifier());
 
             // 리프레시 토큰을 저장 후 업데이트

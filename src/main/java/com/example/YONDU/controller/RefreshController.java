@@ -52,7 +52,7 @@ public class RefreshController {
             }
 
             UserEntity user = userOptional.get();
-            String newAccessToken = jwtService.generateToken(user.getIdentifier());
+            String newAccessToken = jwtService.generateToken(user.getIdentifier(), user.getRole());
             String newRefreshToken = jwtService.generateRefreshToken(user.getIdentifier());
 
             user.setRefreshToken(newRefreshToken);
