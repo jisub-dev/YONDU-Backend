@@ -22,6 +22,7 @@ public enum Bank {
     POST_OFFICE_BANK("우체국예금보험"),
     CITI_BANK("한국씨티은행");
 
+
     private final String bankName;
 
     Bank(String bankName) {

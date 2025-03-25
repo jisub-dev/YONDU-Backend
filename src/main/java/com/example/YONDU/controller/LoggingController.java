@@ -31,7 +31,7 @@ public class LoggingController {
         this.jwtService = jwtService;
     }
 
-    @PostMapping("/seesion")
+    @PostMapping("/session")
     public ResponseEntity<Map<String, Object>> signIn(@RequestBody Map<String, String> loginRequest) {
         try {
             String identifier = loginRequest.get("identifier");
@@ -82,7 +82,7 @@ public class LoggingController {
             ));
         }
     }
-    @DeleteMapping("/seesion")
+    @DeleteMapping("/session")
     public ResponseEntity<Map<String, Object>> logout(@RequestBody Map<String, String> logoutRequest) {
         try {
             String identifier = logoutRequest.get("identifier");
@@ -127,13 +127,15 @@ public class LoggingController {
             String gender = signUpRequest.get("gender");
             String phone = signUpRequest.get("phone");
             String branch = signUpRequest.get("branch");
-            int age = Integer.parseInt(signUpRequest.get("age"));
-            int career = Integer.parseInt(signUpRequest.get("career"));
-            double ntrp = Double.parseDouble(signUpRequest.get("ntrp"));
-            String refundAccount = signUpRequest.get("refund_account");
-            String refundBank = signUpRequest.get("refund_bank");
-            String receiptInfo = signUpRequest.get("receipt_info");
-            String trainerId = signUpRequest.get("trainer_id");
+            String birth = signUpRequest.get("birth");
+            String career = signUpRequest.get("career");
+            String ntrp = signUpRequest.get("ntrp");
+            String refundAccount = signUpRequest.get("refundAccount");
+            String refundBank = signUpRequest.get("refundBank");
+            String receiptInfo = signUpRequest.get("receiptInfo");
+            String trainerId = signUpRequest.containsKey("trainerId") ? signUpRequest.get("trainerId") : null;
+
+
 
             // 필수 필드 확인 (400 Bad Request)
             if (identifier == null || password == null || name == null || phone == null) {
@@ -166,7 +168,7 @@ public class LoggingController {
             newUser.setGender(gender);
             newUser.setPhone(phone);
             newUser.setBranch(branch);
-            newUser.setAge(age);
+            newUser.setBirth(birth);
             newUser.setCareer(career);
             newUser.setNtrp(ntrp);
             newUser.setRefundAccount(refundAccount);
@@ -180,7 +182,7 @@ public class LoggingController {
             newUser.setUpdatedAt(LocalDateTime.now());
             newUser.setRefreshToken(null);
 
-
+            System.out.println("여기까지 돌아감");
             UserEntity savedUser = userRepository.save(newUser);
 
             // 성공 응답 (201 Created)

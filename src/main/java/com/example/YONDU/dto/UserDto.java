@@ -17,9 +17,9 @@ public class UserDto {
     private String gender;
     private String phone;
     private String branch;
-    private int age;
-    private int career;
-    private double ntrp;
+    private String birth;
+    private String career;
+    private String ntrp;
     private String refundAccount;
     private Bank refundBank;
     private String receiptInfo;
@@ -35,7 +35,7 @@ public class UserDto {
         this.gender = user.getGender();
         this.phone = user.getPhone();
         this.branch = user.getBranch();
-        this.age = user.getAge();
+        this.birth = user.getBirth();
         this.career = user.getCareer();
         this.ntrp = user.getNtrp();
         this.refundAccount = user.getRefundAccount();
