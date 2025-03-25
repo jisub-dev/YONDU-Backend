@@ -245,4 +245,74 @@ public class LoggingController {
         }
     }
 
+    @PatchMapping("/auth/modify-info")
+    public ResponseEntity<Map<String, Object>> modifyInfo(
+            @RequestHeader("Authorization") String bearerToken,
+            @RequestBody Map<String, String> request
+    ) {
+        try {
+            // 1. 토큰에서 사용자 식별자(identifier)를 추출
+            String token = bearerToken.replace("Bearer ", "");
+            String identifier = jwtService.extractIdentifier(token);
+
+            // 2. DB에서 사용자 정보를 가져옴
+            Optional<UserEntity> userOptional = userRepository.findById(identifier);
+            if (userOptional.isEmpty()) {
+                // 사용자 정보를 찾지 못한 경우
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                        "success", false,
+                        "message", "User not found"
+                ));
+            }
+
+            UserEntity user = userOptional.get();
+
+            // 3. 변경하고자 하는 값이 request 바디에 있으면 해당 필드만 수정
+            if (request.containsKey("password")) {
+                String rawPassword = request.get("password");
+                user.setPassword(passwordEncoder.encode(rawPassword));
+            }
+
+            if (request.containsKey("refundBank")) {
+                String refundBank = request.get("refundBank");
+                Bank selectedBank = Bank.fromString(refundBank); // 문자열 -> Bank enum
+                user.setRefundBank(selectedBank);
+            }
+
+            if (request.containsKey("refundAccount")) {
+                user.setRefundAccount(request.get("refundAccount"));
+            }
+
+            if (request.containsKey("receiptInfo")) {
+                user.setReceiptInfo(request.get("receiptInfo"));
+            }
+
+            if (request.containsKey("phone")) {
+                String newPhone = request.get("phone");
+                user.setPhone(newPhone);
+            }
+
+            // 4. 수정 시간을 갱신(UpdatedAt)
+            user.setUpdatedAt(LocalDateTime.now());
+
+            // 5. DB에 저장
+            userRepository.save(user);
+
+            // 6. 수정 완료 후 클라이언트에 성공 응답
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "User info updated",
+                    "user", new LogginDto(user)
+            ));
+
+        } catch (Exception e) {
+            // 서버에서 예외가 난 경우, 500 에러 응답
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "success", false,
+                    "message", "Internal server error"
+            ));
+        }
+    }
+
+
 }

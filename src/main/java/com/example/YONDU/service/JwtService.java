@@ -73,4 +73,19 @@ public class JwtService {
             return false; // 위조되었거나 형식 오류
         }
     }
+
+    // 토큰에서 사용자 식별자 추출
+    public String extractIdentifier(String token) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8)))
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            return claims.getSubject(); // setSubject에 넣어둔 값이 곧 사용자 식별자
+        } catch (JwtException e) {
+            return null;
+        }
+    }
 }
