@@ -6,7 +6,7 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "member")
+@Table(name = "user")
 @Getter
 @Setter
 public class UserEntity {
@@ -37,14 +37,14 @@ public class UserEntity {
     @Column(name = "branch", length = 50, nullable = false)
     private String branch;
 
-    @Column(name = "age", nullable = false)
-    private int age;
+    @Column(name = "birth", length = 20, nullable = false)
+    private String birth;
 
-    @Column(name = "career", nullable = false)
-    private int career;
+    @Column(name = "career", length = 20, nullable = false)
+    private String career;
 
-    @Column(name = "ntrp", nullable = false)
-    private double ntrp;
+    @Column(name = "ntrp", length = 15, nullable = false)
+    private String ntrp;
 
     @Column(name = "refund_account", length = 255, nullable = false)
     private String refundAccount;

@@ -17,14 +17,16 @@ public class LogginDto {
     private String gender;
     private String phone;
     private String branch;
-    private int age;
-    private int career;
-    private double ntrp;
+    private String birth;
+    private String career;
+    private String ntrp;
     private String refundAccount;
     private Bank refundBank;
     private String receiptInfo;
     private String trainerId;
     private boolean banned;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public LogginDto(UserEntity user) {
         this.identifier = user.getIdentifier();
@@ -33,7 +35,7 @@ public class LogginDto {
         this.gender = user.getGender();
         this.phone = user.getPhone();
         this.branch = user.getBranch();
-        this.age = user.getAge();
+        this.birth = user.getBirth();
         this.career = user.getCareer();
         this.ntrp = user.getNtrp();
         this.refundAccount = user.getRefundAccount();
@@ -41,5 +43,7 @@ public class LogginDto {
         this.receiptInfo = user.getReceiptInfo();
         this.trainerId = user.getTrainerId();
         this.banned = user.isBanned();
+        this.createdAt = user.getCreatedAt();
+        this.updatedAt = user.getUpdatedAt();
     }
 }
