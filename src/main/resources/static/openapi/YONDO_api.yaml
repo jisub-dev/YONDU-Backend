@@ -12,9 +12,9 @@ servers:
 
 paths:
   ########################################
-  # 1) 로그인: POST /api/sessions
+  # 1) 로그인: POST /api/auth/signin
   ########################################
-  /api/sessions:
+  /api/auth/signin:
     post:
       summary: "로그인 (JWT 발급)"
       description: |
@@ -132,9 +132,9 @@ paths:
 
 
   ########################################
-  # 2) 회원가입: POST /api/users
+  # 2) 회원가입: POST /api/auth/signin
   ########################################
-  /api/users:
+  /api/auth/signup:
     post:
       summary: "회원가입"
       description: |
@@ -226,7 +226,7 @@ paths:
     patch:
       summary: "회원 정보 수정"
       description: |
-        * 기본적으로 `password`, `refund_account`, `receipt_info`, `refund_bank`만 수정 가능.
+        * 기본적으로 `password`, `refund_account`, `receiptInfo`, `refund_bank`만 수정 가능.
         * 관리자인 경우 더 많은 필드 수정 가능(예: identifier, name, phone 등).
         * 권한 없는 필드 수정 요청 시 403 오류.
       operationId: modifyInfo
@@ -252,7 +252,7 @@ paths:
                 value:
                   password: "newPassword"
                   refund_account: "110-987-654321"
-                  receipt_info: false
+                  receiptInfo: false
                   refund_bank: "우리은행"
               adminEdit:
                 summary: "관리자 권한으로 모든 필드를 수정하는 예시"

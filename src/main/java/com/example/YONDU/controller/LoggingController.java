@@ -3,6 +3,7 @@ package com.example.YONDU.controller;
 import com.example.YONDU.dto.LogginDto;
 import com.example.YONDU.dto.TrainerInfoDto;
 import com.example.YONDU.entity.Bank;
+import com.example.YONDU.entity.ReceiptBoolean;
 import com.example.YONDU.entity.Role;
 import com.example.YONDU.entity.UserEntity;
 import com.example.YONDU.repository.UserRepository;
@@ -132,7 +133,7 @@ public class LoggingController {
             String ntrp = signUpRequest.get("ntrp");
             String refundAccount = signUpRequest.get("refundAccount");
             String refundBank = signUpRequest.get("refundBank");
-            String receiptInfo = signUpRequest.get("receiptInfo");
+            ReceiptBoolean receiptInfo = ReceiptBoolean.valueOf(signUpRequest.get("receiptInfo"));
             String trainerId = signUpRequest.containsKey("trainerId") ? signUpRequest.get("trainerId") : null;
 
 
@@ -254,7 +255,7 @@ public class LoggingController {
             }
 
             if (request.containsKey("receiptInfo")) {
-                user.setReceiptInfo(request.get("receiptInfo"));
+                user.setReceiptInfo(ReceiptBoolean.valueOf(request.get("receiptInfo")));
             }
 
             if (request.containsKey("phone")) {

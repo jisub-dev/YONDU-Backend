@@ -40,7 +40,7 @@ public class LogginDto {
         this.ntrp = user.getNtrp();
         this.refundAccount = user.getRefundAccount();
         this.refundBank = user.getRefundBank();
-        this.receiptInfo = user.getReceiptInfo();
+        this.receiptInfo = String.valueOf(user.getReceiptInfo());
         this.trainerId = user.getTrainerId();
         this.banned = user.isBanned();
         this.createdAt = user.getCreatedAt();
