@@ -217,14 +217,9 @@ public class LoggingController {
                 "trainers", trainerInfoList
         ));
     }
-<<<<<<< HEAD
-=======
 
     @PatchMapping("/auth/modify-info")
-    public ResponseEntity<Map<String, Object>> modifyInfo(
-            @RequestHeader("Authorization") String bearerToken,
-            @RequestBody Map<String, String> request
-    ) {
+    public ResponseEntity<Map<String, Object>> modifyInfo( @RequestHeader("Authorization") String bearerToken, @RequestBody Map<String, String> request) {
         try {
             // 1. 토큰에서 사용자 식별자(identifier)를 추출
             String token = bearerToken.replace("Bearer ", "");
@@ -288,7 +283,4 @@ public class LoggingController {
             ));
         }
     }
-
-
->>>>>>> feature/user_auth-RTtkoen-dev-logout&infopatch
 }
