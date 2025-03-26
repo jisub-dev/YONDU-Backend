@@ -159,13 +159,13 @@ paths:
                   "gender": "F"
                   "phone": "010-1111-2222"
                   "branch": "서울점"
-                  "age": 25
-                  "career": 3
-                  "ntrp": 3.5
-                  "refund_account": "110-123-456789"
-                  "refund_bank": "KB국민은행"
-                  "receipt_info": "현금영수증"
-                  "trainer_id": "dh"
+                  "birth": "20010304"
+                  "ntrp": "3.5"
+                  "career": "3"
+                  "refundAccount": "110-123-456789"
+                  "refundBank": "KB국민은행"
+                  "receiptInfo": "(enum)발급|미발급"
+                  "trainerId": "1223431"
               duplicateIdentifier:
                 summary: "이미 존재하는 identifier"
                 value:
@@ -471,13 +471,14 @@ components:
         - gender
         - phone
         - branch
-        - age
+        - birth
+        - ntrp
         - career
-        - entrap
-        - refund_account
-        - receipt_info
-        - trainer_id
-        - refund_bank
+        - refundAccount
+        - refundBank
+        - receiptInfo
+        - receiptDetail
+        - trainerId
       properties:
         identifier:
           type: string
@@ -498,27 +499,31 @@ components:
         branch:
           type: string
           example: "서울점"
-        age:
-          type: integer
-          example: 25
+        birth:
+          type: string
+          example: "20020304"
+        ntrp:
+          type: string
+          example: "3.5"
         career:
           type: integer
           example: 3
-        entrap:
-          type: boolean
-          example: false
-        refund_account:
+        refundAccount:
           type: string
           example: "110-123-456789"
-        receipt_info:
-          type: boolean
-          example: true
-        trainer_id:
+        refundBank:
+          type: enum
+          example: "KB은행"
+        receiptInfo:
+          type: enum
+          example: "발급"
+        receiptDetail:
+          type: String
+          example: "개인 : 020304"
+        trainerId:
           type: integer
           example: 1
-        refund_bank:
-          type: string
-          example: "KB은행"
+
 
     ModifyInfoRequest:
       type: object
@@ -527,14 +532,14 @@ components:
           type: string
           format: password
           example: "newPassword"
-        refund_account:
+        refundAccount:
           type: string
           example: "110-987-654321"
-        receipt_info:
-          type: boolean
-          example: true
-        refund_bank:
-          type: string
+        receiptInfo:
+          type: enum
+          example: "발급"
+        refundBank:
+          type: enum
           example: "우리은행"
         # 관리자 권한 시 identifier, name, phone, branch 등 추가 필드도 수정 가능
 

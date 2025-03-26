@@ -70,6 +70,7 @@ public class JwtService {
         }
     }
 
+<<<<<<< HEAD
     // Refresh Token으로 새 Access Token 발급 (role도 같이 넣기)
     public String refreshToken(String refreshToken, Role role) {
         try {
@@ -81,10 +82,23 @@ public class JwtService {
 
             String identifier = claims.getSubject();
             return generateToken(identifier, role);
+=======
+    // 토큰에서 사용자 식별자 추출
+    public String extractIdentifier(String token) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8)))
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            return claims.getSubject(); // setSubject에 넣어둔 값이 곧 사용자 식별자
+>>>>>>> feature/user_auth-RTtkoen-dev-logout&infopatch
         } catch (JwtException e) {
             return null;
         }
     }
+<<<<<<< HEAD
 
     // 토큰에서 role 추출
     public String extractRole(String token) {
@@ -107,4 +121,6 @@ public class JwtService {
 
         return claims.getSubject();
     }
+=======
+>>>>>>> feature/user_auth-RTtkoen-dev-logout&infopatch
 }
