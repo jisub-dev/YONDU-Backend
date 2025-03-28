@@ -96,6 +96,8 @@ public class LoggingController {
                 ));
             }
 
+
+
             Optional<UserEntity> userOptional = userRepository.findById(identifier);
 
             if (userOptional.isEmpty()) {
@@ -105,7 +107,8 @@ public class LoggingController {
                 ));
             }
             UserEntity user = userOptional.get();
-
+            user.setRefreshToken(null); // 로그아웃 시 리프레시 토큰 제거
+            userRepository.save(user);
             return ResponseEntity.ok(Map.of(
                     "success", true,
                     "message", "logout",
@@ -150,14 +153,14 @@ public class LoggingController {
 
             // 이메일 중복 확인 (409 Conflict)
             if (userRepository.existsByIdentifier(identifier)) {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                return ResponseEntity.status(809).body(Map.of(
                         "success", false,
                         "message", "Identifier is already in use"
                 ));
             }
 
             if (userRepository.existsByPhone(phone)) {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                return ResponseEntity.status(808).body(Map.of(
                         "success", false,
                         "message", "phonenumber is already in use"
                 ));
