@@ -10,6 +10,8 @@ import com.example.YONDU.repository.UserRepository;
 import com.example.YONDU.service.JwtService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -224,28 +226,25 @@ public class LoggingController {
     }
 
     @PatchMapping("/modify-info")
-    public ResponseEntity<Map<String, Object>> modifyInfo( @RequestHeader("Authorization") String bearerToken, @RequestBody Map<String, String> request) {
+    public ResponseEntity<Map<String, Object>> modifyInfo( @RequestBody Map<String, String> request) {
         try {
-            // 1. 토큰에서 사용자 식별자(identifier)를 추출
-            String token = bearerToken.replace("Bearer ", "");
-            String identifier = jwtService.extractIdentifier(token);
+            // 1. SecurityContext에서 Authentication 추출
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-            // 2. DB에서 사용자 정보를 가져옴
-            Optional<UserEntity> userOptional = userRepository.findById(identifier);
-            if (userOptional.isEmpty()) {
-                // 사용자 정보를 찾지 못한 경우
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+            // 2. principal이 null이 아니고 UserEntity 타입이면 꺼냄
+            if (authentication == null || authentication.getPrincipal() == null ||
+                    !(authentication.getPrincipal() instanceof UserEntity)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
                         "success", false,
-                        "message", "User not found"
+                        "message", "Not authenticated"
                 ));
             }
 
-            UserEntity user = userOptional.get();
+            UserEntity user = (UserEntity) authentication.getPrincipal();
 
-            // 3. 변경하고자 하는 값이 request 바디에 있으면 해당 필드만 수정
+            // 3. 이후 user 객체를 바로 수정
             if (request.containsKey("password")) {
-                String rawPassword = request.get("password");
-                user.setPassword(passwordEncoder.encode(rawPassword));
+                user.setPassword(passwordEncoder.encode(request.get("password")));
             }
 
             if (request.containsKey("refundBank")) {
