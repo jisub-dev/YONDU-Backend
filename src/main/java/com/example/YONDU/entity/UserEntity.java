@@ -57,6 +57,12 @@ public class UserEntity {
     @Column(name = "receiptInfo")
     private ReceiptBoolean receiptInfo;
 
+    @Column(name = "receiptType")
+    private String receiptType;
+
+    @Column(name = "receiptNumber")
+    private String receiptNumber;
+
     @Column(name = "trainerId")
     private String trainerId;
 

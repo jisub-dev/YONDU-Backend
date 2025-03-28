@@ -134,6 +134,8 @@ public class LoggingController {
             String refundAccount = signUpRequest.get("refundAccount");
             String refundBank = signUpRequest.get("refundBank");
             ReceiptBoolean receiptInfo = ReceiptBoolean.valueOf(signUpRequest.get("receiptInfo"));
+            String receiptType = signUpRequest.get("receiptType");
+            String receiptNumber = signUpRequest.get("receiptNumber");
             String trainerId = signUpRequest.containsKey("trainerId") ? signUpRequest.get("trainerId") : null;
 
 
@@ -176,6 +178,8 @@ public class LoggingController {
             Bank selectedBank = Bank.fromString(refundBank); // 한글 은행명을 Enum으로 변환
             newUser.setRefundBank(selectedBank);
             newUser.setReceiptInfo(receiptInfo);
+            newUser.setReceiptType(receiptType);
+            newUser.setReceiptNumber(receiptNumber);
             newUser.setTrainerId(trainerId);
             newUser.setBanned(false);
             newUser.setRole(Role.MEMBER);
