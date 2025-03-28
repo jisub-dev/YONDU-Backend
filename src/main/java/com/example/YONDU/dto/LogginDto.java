@@ -23,6 +23,8 @@ public class LogginDto {
     private String refundAccount;
     private Bank refundBank;
     private String receiptInfo;
+    private String receiptType;
+    private String receiptNumber;
     private String trainerId;
     private boolean banned;
     private LocalDateTime createdAt;
@@ -41,6 +43,8 @@ public class LogginDto {
         this.refundAccount = user.getRefundAccount();
         this.refundBank = user.getRefundBank();
         this.receiptInfo = String.valueOf(user.getReceiptInfo());
+        this.receiptType = String.valueOf(user.getReceiptType());
+        this.receiptNumber = String.valueOf(user.getReceiptNumber());
         this.trainerId = user.getTrainerId();
         this.banned = user.isBanned();
         this.createdAt = user.getCreatedAt();
