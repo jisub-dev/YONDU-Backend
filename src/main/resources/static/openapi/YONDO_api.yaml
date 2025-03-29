@@ -437,6 +437,217 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  ########################################
+  # (추가) 관리자용 API
+  # 6) GET /api/admin/modify-info
+  ########################################
+  /api/admin/modify-info:
+    get:
+      summary: "관리자가 회원들의 정보를 불러오는 API"
+      description: |
+        * 예: 전체 사용자 목록 조회, 또는 특정 조건에 맞는 사용자들 조회.
+        * 관리자 권한 필요. (SecurityContext에서 ADMIN 여부 확인)
+      operationId: adminGetUsers
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: "관리자용 사용자 목록 조회 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        identifier:
+                          type: string
+                          example: "testUser"
+                        name:
+                          type: string
+                          example: "홍길동"
+                        phone:
+                          type: string
+                          example: "010-1234-5678"
+                        role:
+                          type: string
+                          example: "MEMBER"
+                example:
+                  status: 200
+                  success: true
+                  data:
+                    - identifier: "testUser"
+                      name: "홍길동"
+                      phone: "010-1234-5678"
+                      role: "MEMBER"
+                    - identifier: "adminUser"
+                      name: "관리자"
+                      phone: "010-0000-1111"
+                      role: "ADMIN"
+        "403":
+          description: "권한이 없는 사용자(ADMIN이 아님) 혹은 ban된 사용자"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+            examples:
+              noAdminPermission:
+                summary: "admin 권한 없음"
+                value:
+                  status: 403
+                  success: false
+                  message: "권한이 없습니다(관리자 전용)"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  ########################################
+  # 7) PATCH /api/admin/modify-info/{identifier}
+  ########################################
+  /api/admin/modify-info/{identifier}:
+    patch:
+      summary: "관리자가 특정 사용자의 정보를 수정"
+      description: |
+        * 관리자 권한 필요.
+        * Path Param: 수정 대상 식별자
+        * RequestBody: 수정할 필드들
+      operationId: adminModifyUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: identifier
+          in: path
+          required: true
+          description: "수정 대상 사용자 식별자"
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModifyInfoRequest"
+            examples:
+              adminSample:
+                summary: "관리자가 사용자 정보 수정 예시"
+                value:
+                  name: "수정된 이름"
+                  phone: "010-9999-8888"
+                  role: "TRAINER"
+    responses:
+      "200":
+        description: "수정 성공"
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: integer
+                  example: 200
+                success:
+                  type: boolean
+                  example: true
+                message:
+                  type: string
+                  example: "수정 성공"
+      "403":
+        description: "권한이 없는 사용자(ADMIN이 아님) 혹은 ban된 사용자"
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            noAdminPermission:
+              summary: "admin 권한 없음"
+              value:
+                status: 403
+                success: false
+                message: "권한이 없습니다(관리자 전용)"
+      "404":
+        description: "대상 사용자를 찾을 수 없음"
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            userNotFound:
+              summary: "존재하지 않는 식별자"
+              value:
+                status: 404
+                success: false
+                message: "해당 사용자를 찾을 수 없습니다"
+      "500":
+        $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      summary: "관리자가 특정 사용자를 삭제"
+      description: |
+        * 관리자 권한 필요.
+        * Path Param: 삭제 대상 식별자
+      operationId: adminDeleteUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: identifier
+          in: path
+          required: true
+          description: "삭제 대상 사용자 식별자"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "삭제 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "사용자 삭제 완료"
+        "403":
+          description: "권한이 없는 사용자(ADMIN이 아님) 혹은 ban된 사용자"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+            examples:
+              noAdminPermission:
+                summary: "admin 권한 없음"
+                value:
+                  status: 403
+                  success: false
+                  message: "권한이 없습니다(관리자 전용)"
+        "404":
+          description: "삭제 대상 사용자를 찾을 수 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+            examples:
+              userNotFound:
+                summary: "존재하지 않는 식별자"
+                value:
+                  status: 404
+                  success: false
+                  message: "해당 사용자를 찾을 수 없습니다"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
 components:
   securitySchemes:
@@ -522,18 +733,17 @@ components:
           type: string
           example: "110-123-456789"
         refundBank:
-          type: enum
-          example: "KB은행"
+          type: string
+          example: "KB국민은행"
         receiptInfo:
-          type: enum
+          type: string
           example: "발급"
         receiptDetail:
-          type: String
+          type: string
           example: "개인 : 020304"
         trainerId:
-          type: integer
-          example: 1
-
+          type: string
+          example: "1223431"
 
     ModifyInfoRequest:
       type: object
@@ -546,12 +756,18 @@ components:
           type: string
           example: "110-987-654321"
         receiptInfo:
-          type: enum
+          type: string
           example: "발급"
         refundBank:
-          type: enum
+          type: string
           example: "우리은행"
-        # 관리자 권한 시 identifier, name, phone, branch 등 추가 필드도 수정 가능
+        phone:
+          type: string
+          example: "010-9999-8888"
+        name:
+          type: string
+          example: "수정된 이름"
+        # 관리자 권한 시 identifier, branch 등 추가 필드 수정 가능
 
     TokenRefreshRequest:
       type: object
