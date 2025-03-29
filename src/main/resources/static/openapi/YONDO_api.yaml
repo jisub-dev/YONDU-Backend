@@ -198,8 +198,8 @@ paths:
                     status: 201
                     success: true
                     message: "회원가입 성공"
-        "409":
-          description: "이미 존재하는 아이디 또는 전화번호"
+        "809":
+          description: "이미 존재하는 아이디"
           content:
             application/json:
               schema:
@@ -208,13 +208,21 @@ paths:
                 duplicateIdentifier:
                   summary: "이미 존재하는 아이디"
                   value:
-                    status: 409
+                    status: 809
                     success: false
                     message: "이미 존재하는 아이디입니다."
+
+        "808":
+          description: "이미 존재하는 전화번호"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
                 duplicatePhone:
                   summary: "이미 존재하는 전화번호"
                   value:
-                    status: 409
+                    status: 808
                     success: false
                     message: "이미 존재하는 전화번호입니다"
         "500":

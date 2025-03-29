@@ -152,14 +152,14 @@ public class LoggingController {
 
             // 이메일 중복 확인 (409 Conflict)
             if (userRepository.existsByIdentifier(identifier)) {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                return ResponseEntity.status(809).body(Map.of(
                         "success", false,
                         "message", "Identifier is already in use"
                 ));
             }
 
             if (userRepository.existsByPhone(phone)) {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                return ResponseEntity.status(808).body(Map.of(
                         "success", false,
                         "message", "phonenumber is already in use"
                 ));
