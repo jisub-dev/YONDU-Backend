@@ -40,6 +40,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 로그인/회원가입/토큰재발급 등은 토큰 없이 호출 가능
                         .requestMatchers("/api/auth/**", "/api/tokens/refresh").permitAll()
+                        // 스웨거 관련 등도 토큰 없이 호출 가능
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-resources/**", "/openapi/**").permitAll()
                         // 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated()
                 )
