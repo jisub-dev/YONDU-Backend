@@ -13,6 +13,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
 
 @Configuration
 @EnableWebSecurity
@@ -36,7 +39,22 @@ public class SecurityConfig {
 
         // Security 설정
         http
-                .csrf(csrf -> csrf.disable()) // CSRF 비활성(필요 시 활성화)
+                .csrf(csrf -> csrf.disable())// CSRF 비활성(필요 시 활성화)
+                .cors(cors -> {
+                    // 1. CORS 정책 생성
+                    CorsConfiguration config = new CorsConfiguration();
+                    config.addAllowedOrigin("*");// 허용할 도메인 //FIXME: 도메인 서버 IP로 변경, 예시:(http://localhost:3000)
+                    config.addAllowedMethod("*");// 허용할 HTTP 메서드
+                    config.addAllowedHeader("*");// 허용할 헤더
+                    config.setAllowCredentials(true);// 인증 정보 포함 여부
+
+                    // 2. URL별로 어떤 CORS 정책을 적용할 것인지 source에 등록
+                    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+                    source.registerCorsConfiguration("/**", config);// 모든 경로에 대해서 위 세팅을 적용
+
+                    // 3. 최종적으로 Security에 CORS 소스를 설정
+                    cors.configurationSource(source);
+                })
                 .authorizeHttpRequests(auth -> auth
                         // 로그인/회원가입/토큰재발급 등은 토큰 없이 호출 가능
                         .requestMatchers("/api/auth/**", "/api/tokens/refresh").permitAll()
