@@ -9,6 +9,7 @@ import com.example.YONDU.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize; // ✅ 추가
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -18,6 +19,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/admin/modify-info")
+@PreAuthorize("hasRole('MANAGER')") // MANAGER만 이 컨트롤러의 모든 API 사용 가능
 public class AdminUserController {
 
     private final UserRepository userRepository;

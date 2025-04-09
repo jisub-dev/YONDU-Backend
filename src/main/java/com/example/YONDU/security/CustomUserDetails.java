@@ -1,11 +1,13 @@
 package com.example.YONDU.security;
 
 import com.example.YONDU.entity.UserEntity;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.GrantedAuthority;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 public class CustomUserDetails implements UserDetails {
 
@@ -21,7 +23,8 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.emptyList(); // 권한 처리를 원하면 여기에 role 매핑
+        String roleName = "ROLE_" + user.getRole().name(); // 예: ROLE_MANAGER
+        return List.of(new SimpleGrantedAuthority(roleName));
     }
 
     @Override public String getPassword() { return user.getPassword(); }

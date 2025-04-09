@@ -184,12 +184,11 @@ public class LoggingController {
             newUser.setReceiptNumber(receiptNumber);
             newUser.setTrainerId(trainerId);
             newUser.setBanned(false);
-            newUser.setRole(Role.MEMBER);
+            newUser.setRole(Role.TRAINER);
             newUser.setCreatedAt(LocalDateTime.now());
             newUser.setUpdatedAt(LocalDateTime.now());
             newUser.setRefreshToken(null);
 
-            System.out.println("여기까지 돌아감");
             UserEntity savedUser = userRepository.save(newUser);
 
             // 성공 응답 (201 Created)
