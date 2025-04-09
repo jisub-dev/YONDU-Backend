@@ -20,12 +20,12 @@ import java.util.Map;
 import java.util.Optional;
 
 @Component
-public class JwtAuthenticationFilte extends OncePerRequestFilter {
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
 
-    public JwtAuthenticationFilte(JwtService jwtService, UserRepository userRepository) {
+    public JwtAuthenticationFilter(JwtService jwtService, UserRepository userRepository) {
         this.jwtService = jwtService;
         this.userRepository = userRepository;
     }

@@ -1,6 +1,7 @@
 package com.example.YONDU.config;
 
 import com.example.YONDU.repository.UserRepository;
+import com.example.YONDU.security.JwtAuthenticationFilter;
 import com.example.YONDU.service.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
