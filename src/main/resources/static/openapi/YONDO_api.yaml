@@ -4,11 +4,12 @@ info:
   description: |
     RESTful API 설계 가이드에 맞춰 수정된 사용자 인증/정보 관련 API 명세
     (로그인, 로그아웃, 비밀번호 초기화, 회원가입, 회원정보 수정, 토큰 재발급 등)
+    + 확장: 트레이너 배정 ON/OFF, 일일 이용권 안내, PT 스케줄 관리, 직원 공지사항
   version: "1.0.0"
 
 servers:
-  - url: http://localhost:8080
-    description: 로컬 서버 (개발용)
+  - url: http://202.31.147.127:9345
+    description: 서버 (개발용)
 
 paths:
   ########################################
@@ -132,7 +133,7 @@ paths:
 
 
   ########################################
-  # 2) 회원가입: POST /api/auth/signin
+  # 2) 회원가입: POST /api/auth/signup
   ########################################
   /api/auth/signup:
     post:
@@ -153,21 +154,21 @@ paths:
               normal:
                 summary: "정상 회원가입 예시"
                 value:
-                  "identifier": "newUser"
-                  "password": "mypassword"
-                  "name": "새 유저"
-                  "gender": "남"
-                  "phone": "010-1111-2222"
-                  "branch": "서울점"
-                  "birth": "20010304"
-                  "ntrp": "3.5"
-                  "career": "3"
-                  "refundAccount": "110-123-456789"
-                  "refundBank": "KB국민은행"
-                  "receiptInfo": "(enum)발급|미발급"
-                  "receiptType": "(enum)개인|법인"
-                  "receiptNumber": "3123231212"
-                  "trainerId": "1223431"
+                  identifier: "newUser"
+                  password: "mypassword"
+                  name: "새 유저"
+                  gender: "남"
+                  phone: "010-1111-2222"
+                  branch: "서울점"
+                  birth: "20010304"
+                  ntrp: "3.5"
+                  career: "3"
+                  refundAccount: "110-123-456789"
+                  refundBank: "KB국민은행"
+                  receiptInfo: "발급"
+                  receiptType: "개인"
+                  receiptNumber: "3123231212"
+                  trainerId: "1223431"
               duplicateIdentifier:
                 summary: "이미 존재하는 identifier"
                 value:
@@ -211,7 +212,6 @@ paths:
                     status: 809
                     success: false
                     message: "이미 존재하는 아이디입니다."
-
         "808":
           description: "이미 존재하는 전화번호"
           content:
@@ -316,7 +316,7 @@ paths:
         * 헤더에 Access Token을 포함해야 할 수도 있음(서버 정책에 따라).
       operationId: initPassword
       security:
-        - bearerAuth: []  # 토큰 필요 시
+        - bearerAuth: []
       parameters:
         - name: identifier
           in: path
@@ -339,7 +339,6 @@ paths:
               missingToken:
                 summary: "token 누락"
                 value:
-                  # identifier는 URL 경로로 전달
                   token: ""
       responses:
         "200":
@@ -436,6 +435,7 @@ paths:
                     code: "T002"
         "500":
           $ref: "#/components/responses/InternalServerError"
+
 
   ########################################
   # (추가) 관리자용 API
@@ -542,29 +542,29 @@ paths:
                   name: "수정된 이름"
                   phone: "010-9999-8888"
                   role: "TRAINER"
-    responses:
-      "200":
-        description: "수정 성공"
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                status:
-                  type: integer
-                  example: 200
-                success:
-                  type: boolean
-                  example: true
-                message:
-                  type: string
-                  example: "수정 성공"
-      "403":
-        description: "권한이 없는 사용자(ADMIN이 아님) 혹은 ban된 사용자"
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ErrorResponse"
+      responses:
+        "200":
+          description: "수정 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "수정 성공"
+        "403":
+          description: "권한이 없는 사용자(ADMIN이 아님) 혹은 ban된 사용자"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
           examples:
             noAdminPermission:
               summary: "admin 권한 없음"
@@ -572,12 +572,12 @@ paths:
                 status: 403
                 success: false
                 message: "권한이 없습니다(관리자 전용)"
-      "404":
-        description: "대상 사용자를 찾을 수 없음"
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "대상 사용자를 찾을 수 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
           examples:
             userNotFound:
               summary: "존재하지 않는 식별자"
@@ -585,8 +585,8 @@ paths:
                 status: 404
                 success: false
                 message: "해당 사용자를 찾을 수 없습니다"
-      "500":
-        $ref: "#/components/responses/InternalServerError"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
     delete:
       summary: "관리자가 특정 사용자를 삭제"
@@ -646,6 +646,400 @@ paths:
                   status: 404
                   success: false
                   message: "해당 사용자를 찾을 수 없습니다"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+
+  ####################################################
+  # 8) 트레이너 배정 On/Off 설정: PATCH /api/admin/trainer-assign
+  ####################################################
+  /api/admin/trainer-assign:
+    patch:
+      summary: "트레이너 배정 권한 On/Off"
+      description: |
+        * 관리자 또는 해당 트레이너 본인이 트레이너 배정 가능 상태를 ON/OFF로 설정.
+        * 매일 새벽 5시, '배정 ON' 상태 트레이너에게 전날 신규가입 회원들이 랜덤 배정됨.
+      operationId: patchTrainerAssign
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        description: "배정 On/Off에 필요한 데이터"
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                trainerId:
+                  type: string
+                  example: "T1234"
+                assignable:
+                  type: boolean
+                  example: true
+            examples:
+              turnOn:
+                summary: "배정 On 예시"
+                value:
+                  trainerId: "T1234"
+                  assignable: true
+              turnOff:
+                summary: "배정 Off 예시"
+                value:
+                  trainerId: "T1234"
+                  assignable: false
+      responses:
+        "200":
+          description: "배정 권한 수정 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "트레이너 배정 상태가 변경되었습니다."
+        "403":
+          description: "권한이 없는 사용자(ADMIN이 아님) 혹은 자기 자신이 아님"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+            examples:
+              noPermission:
+                summary: "본인 또는 관리자 권한이 없음"
+                value:
+                  status: 403
+                  success: false
+                  message: "권한이 없습니다"
+        "404":
+          description: "대상 트레이너를 찾을 수 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+            examples:
+              trainerNotFound:
+                summary: "존재하지 않는 트레이너 ID"
+                value:
+                  status: 404
+                  success: false
+                  message: "해당 트레이너를 찾을 수 없습니다"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+
+  ####################################################
+  # 9) PT (Personal Training) - 회원전용: GET /api/PT/mypt
+  ####################################################
+  /api/PT/mypt:
+    get:
+      summary: "회원이 자신의 PT 목록(세션)을 조회"
+      description: |
+        * 회원이 가진 PT 계약(횟수, 기간), 예약된 스케줄, 담당 트레이너 등의 정보를 조회
+        * '회색(예약)', '파랑(완료요청)', '검정(완료)' 등 상태 정보도 확인 가능
+      operationId: getMyPT
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: "PT 목록 조회 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  success:
+                    type: boolean
+                    example: true
+                  pts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        ptId:
+                          type: string
+                          example: "PT12345"
+                        totalCount:
+                          type: integer
+                          example: 10
+                        usedCount:
+                          type: integer
+                          example: 2
+                        trainerId:
+                          type: string
+                          example: "T1234"
+                        schedules:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              date:
+                                type: string
+                                example: "2025-05-20 14:00"
+                              status:
+                                type: string
+                                example: "RESERVED | REQUESTED | COMPLETED"
+              example:
+                status: 200
+                success: true
+                pts:
+                  - ptId: "PT12345"
+                    totalCount: 10
+                    usedCount: 2
+                    trainerId: "T1234"
+                    schedules:
+                      - date: "2025-05-20 14:00"
+                        status: "RESERVED"
+                      - date: "2025-05-25 14:00"
+                        status: "REQUESTED"
+        "401":
+          description: "인증 실패 (토큰 오류)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+            examples:
+              tokenError:
+                summary: "유효하지 않은 토큰"
+                value:
+                  status: 401
+                  success: false
+                  message: "인증 실패"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+
+  ########################################
+  # 9-1) PT 상세 조회/수정: GET, PATCH /api/PT/mypt/{ptSessionId}
+  ########################################
+  /api/PT/mypt/{ptSessionId}:
+    get:
+      summary: "특정 PT 세션 상세 정보 조회"
+      description: |
+        * 회원이 자신이 가진 PT 세션(단일 세션)에 대한 상세 정보(예: 스케줄, 상태, 남은 횟수 등) 조회.
+      operationId: getMyPTDetail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: ptSessionId
+          in: path
+          required: true
+          description: "세션 식별자"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "세션 상세 조회 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  success:
+                    type: boolean
+                    example: true
+                  ptDetail:
+                    type: object
+                    properties:
+                      ptId:
+                        type: string
+                        example: "PT12345"
+                      totalCount:
+                        type: integer
+                        example: 10
+                      usedCount:
+                        type: integer
+                        example: 2
+                      schedules:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            scheduleId:
+                              type: string
+                              example: "SCH001"
+                            date:
+                              type: string
+                              example: "2025-05-25 14:00"
+                            status:
+                              type: string
+                              example: "RESERVED | REQUESTED | COMPLETED"
+                example:
+                  status: 200
+                  success: true
+                  ptDetail:
+                    ptId: "PT12345"
+                    totalCount: 10
+                    usedCount: 2
+                    schedules:
+                      - scheduleId: "SCH001"
+                        date: "2025-05-25 14:00"
+                        status: "REQUESTED"
+        "404":
+          description: "존재하지 않는 PT 세션"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+            examples:
+              ptSessionNotFound:
+                summary: "세션 식별자 없음"
+                value:
+                  status: 404
+                  success: false
+                  message: "해당 PT 세션을 찾을 수 없습니다."
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    patch:
+      summary: "특정 PT 세션 업데이트 (예: 스케줄 변경/삭제, 완료요청 등)"
+      description: |
+        * 회원(또는 트레이너)에 의해 스케줄 수정, 예약 변경, 완료 요청(REQUESTED) 등 상태 변경.
+        * '완료(검정)' 상태(최종 완료)는 수정/삭제 불가.
+      operationId: patchMyPTDetail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: ptSessionId
+          in: path
+          required: true
+          description: "세션 식별자"
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: "수정할 스케줄 정보 또는 완료 요청 등"
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                scheduleId:
+                  type: string
+                  example: "SCH001"
+                action:
+                  type: string
+                  example: "REQUEST_COMPLETE | CANCEL | UPDATE_SCHEDULE"
+                newDate:
+                  type: string
+                  example: "2025-05-25 15:00"
+            examples:
+              requestComplete:
+                summary: "수업 완료 요청"
+                value:
+                  scheduleId: "SCH001"
+                  action: "REQUEST_COMPLETE"
+              changeSchedule:
+                summary: "스케줄 시간 변경"
+                value:
+                  scheduleId: "SCH001"
+                  action: "UPDATE_SCHEDULE"
+                  newDate: "2025-05-25 15:00"
+      responses:
+        "200":
+          description: "세션 업데이트 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "PT 세션 수정 완료"
+        "403":
+          description: "이미 완료된 세션이거나 수정 권한 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+            examples:
+              noPermission:
+                summary: "완료된 스케줄 수정 불가"
+                value:
+                  status: 403
+                  success: false
+                  message: "이미 완료된 수업은 수정할 수 없습니다."
+        "404":
+          description: "존재하지 않는 세션/스케줄"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+            examples:
+              scheduleNotFound:
+                summary: "스케줄 식별자 없음"
+                value:
+                  status: 404
+                  success: false
+                  message: "해당 스케줄을 찾을 수 없습니다."
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+
+  ####################################################
+  # 10) 직원 공지사항: GET /api/notices/employee
+  ####################################################
+  /api/notices/employee:
+    get:
+      summary: "직원 공지사항(일일 이용권, 랜덤 배정, PT 스케줄 등 안내) 조회"
+      description: |
+        * 앱 또는 웹 관리자 페이지에서 직원들에게 제공되는 공지사항 문구를 조회.
+        * 내용: 일일 이용권(Daily Pass) 정책, 신규회원 랜덤배정 로직, PT 스케줄 예약/진행/완료 안내 등.
+      operationId: getEmployeeNotice
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: "공지사항 조회 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  success:
+                    type: boolean
+                    example: true
+                  notice:
+                    type: string
+                    example: |
+                      - 일일이용권 가격: 16,000원
+                      - 직원이 근무 중일 때만 카드 결제 가능
+                      - 신규회원 랜덤 배정: 매일 새벽 5시
+                      - PT 스케줄 예약, 완료 요청 처리 방법 등...
+              example:
+                status: 200
+                success: true
+                notice: |
+                  1) 일일이용권
+                     - 가격: 16,000원, 직원 근무 중만 가능
+                     - 한달권 우선 권장
+                  2) 회원 배정
+                     - 트레이너 '배정 ON' 상태 -> 새벽 5시에 전날 가입 회원 랜덤 배정
+                     - 미리 트레이너 선택 시 배정 제외
+                  3) PT 스케줄
+                     - 예약(회색) -> 완료요청(파랑) -> 완료(검정)
+                     - 완료된 스케줄은 수정/삭제 불가
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -767,7 +1161,13 @@ components:
         name:
           type: string
           example: "수정된 이름"
-        # 관리자 권한 시 identifier, branch 등 추가 필드 수정 가능
+        branch:
+          type: string
+          example: "부산점"
+        role:
+          type: string
+          example: "TRAINER"
+        # 관리자 권한 시 identifier 등 추가 필드 수정 가능
 
     TokenRefreshRequest:
       type: object
