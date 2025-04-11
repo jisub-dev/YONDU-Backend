@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationManagerResolver;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -21,7 +20,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -49,7 +47,7 @@ public class SecurityConfig {
                     config.addAllowedOrigin("*");// 허용할 도메인 //FIXME: 도메인 서버 IP로 변경, 예시:(http://localhost:3000)
                     config.addAllowedMethod("*");// 허용할 HTTP 메서드
                     config.addAllowedHeader("*");// 허용할 헤더
-                    config.setAllowCredentials(true);// 인증 정보 포함 여부
+                    config.setAllowCredentials(false);// 인증 정보 포함 여부 //FIXME: 세션 또는 쿠키를 쓰지 않으면 false로 , 원래 true였음
 
                     // 2. URL별로 어떤 CORS 정책을 적용할 것인지 source에 등록
                     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
