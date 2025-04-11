@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class LogginDto {
     private String identifier;
+    private String memberNo;
     private String name;
     private Role role;
     private String gender;
@@ -32,6 +33,7 @@ public class LogginDto {
 
     public LogginDto(UserEntity user) {
         this.identifier = user.getIdentifier();
+        this.memberNo= user.getMemberNo();
         this.name = user.getName();
         this.role = user.getRole();
         this.gender = user.getGender();
