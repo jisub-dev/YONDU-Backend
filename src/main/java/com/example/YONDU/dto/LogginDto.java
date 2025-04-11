@@ -14,6 +14,7 @@ public class LogginDto {
     private String identifier;
     private String name;
     private Role role;
+    private String memberNo;
     private String gender;
     private String phone;
     private String branch;
@@ -34,6 +35,7 @@ public class LogginDto {
         this.identifier = user.getIdentifier();
         this.name = user.getName();
         this.role = user.getRole();
+        this.memberNo = user.getMemberNo();
         this.gender = user.getGender();
         this.phone = user.getPhone();
         this.branch = user.getBranch();
