@@ -184,7 +184,7 @@ public class LoggingController {
             newUser.setReceiptNumber(receiptNumber);
             newUser.setTrainerId(trainerId);
             newUser.setBanned(false);
-            newUser.setRole(Role.TRAINER);
+            newUser.setRole(Role.MEMBER);
             newUser.setCreatedAt(LocalDateTime.now());
             newUser.setUpdatedAt(LocalDateTime.now());
             newUser.setRefreshToken(null);
