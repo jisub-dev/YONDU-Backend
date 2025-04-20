@@ -15,7 +15,6 @@ public class LogginDto {
     private String memberNo;
     private String name;
     private Role role;
-    private String memberNo;
     private String gender;
     private String phone;
     private String branch;
