@@ -2,22 +2,26 @@ openapi: 3.0.3
 info:
   title: KCC API
   description: |
-    LoggingController에서 제공하는 사용자 관련 API 명세  
-    (질문에서 주어진 7개 기능: 로그인, 비밀번호 초기화, 회원가입, 회원정보 수정, 토큰 재발급, 로그아웃 및 토큰 만료 시 기본 응답)
+    RESTful API 설계 가이드에 맞춰 수정된 사용자 인증/정보 관련 API 명세
+    (로그인, 로그아웃, 비밀번호 초기화, 회원가입, 회원정보 수정, 토큰 재발급 등)
+    + 확장: 트레이너 배정 ON/OFF, 일일 이용권 안내, PT 스케줄 관리, 직원 공지사항
   version: "1.0.0"
 
 servers:
-  - url: http://localhost:8080
-    description: 로컬 서버 (개발용)
+  - url: http://202.31.147.127:9345
+    description: 서버 (개발용)
 
 paths:
-  /api/auth/sign-in:
+  ########################################
+  # 1) 로그인: POST /api/auth/signin
+  ########################################
+  /api/auth/signin:
     post:
       summary: "로그인 (JWT 발급)"
       description: |
-        * identifier(아이디)와 password를 받아 인증 후 JWT 토큰을 발급합니다.
-        * 성공 시 사용자 정보(`user`)와 `token`을 함께 반환합니다.
-      operationId: signIn
+        * 사용자 식별자(`identifier`)와 비밀번호(`password`)를 받아 인증 후 JWT 토큰 발급.
+        * 성공 시 사용자 정보(`user`)와 `token`을 함께 반환.
+      operationId: login
       requestBody:
         required: true
         description: "로그인에 필요한 JSON 데이터"
@@ -29,16 +33,16 @@ paths:
               normal:
                 summary: "정상 입력 예시"
                 value:
-                  identifier: "testUser"
-                  password: "1234"
+                  identifier: "manager1"
+                  password: "managerpass1"
               missingIdentifier:
                 summary: "identifier 누락"
                 value:
-                  password: "1234"
+                  password: "managerpass1"
               missingPassword:
                 summary: "비밀번호 누락"
                 value:
-                  identifier: "testUser"
+                  identifier: "manager1"
       responses:
         "200":
           description: "로그인 성공"
@@ -74,7 +78,7 @@ paths:
                       identifier: "testUser"
                       name: "홍길동"
         "401":
-          description: "로그인 실패"
+          description: "로그인 실패 (자격 증명 불일치)"
           content:
             application/json:
               schema:
@@ -89,35 +93,27 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /api/auth/init-password:
-    post:
-      summary: "비밀번호 초기화"
+    delete:
+      summary: "로그아웃"
       description: |
-        * 식별자(`identifier`)와 토큰(`token`)이 필요합니다.  
-        * 헤더에 Access Token을 포함해야 할 수도 있습니다.
-      operationId: initPassword
-      security:
-        - bearerAuth: []  # 토큰이 필요한 경우에만 사용
+        * 헤더나 바디로 사용자 식별자·토큰 정보를 받아 세션(Refresh Token) 무효화 등 로그아웃 처리.
+        * 필요에 따라 `identifier`를 바디로 받거나, 클라이언트에 저장된 Refresh Token을 삭제할 수도 있습니다.
+      operationId: logout
       requestBody:
-        required: true
-        description: "비밀번호 초기화를 위한 JSON 데이터"
+        required: false
+        description: "로그아웃에 필요한 JSON 데이터(선택)"
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/InitPasswordRequest"
+              $ref: "#/components/schemas/SignOutRequest"
             examples:
               normal:
-                summary: "정상 입력 예시"
-                value:
-                  identifier: "testUser"
-                  token: "인증용_임시_토큰_또는_코드"
-              missingToken:
-                summary: "token 누락"
+                summary: "정상 로그아웃 예시"
                 value:
                   identifier: "testUser"
       responses:
         "200":
-          description: "비밀번호 초기화 성공"
+          description: "로그아웃 성공"
           content:
             application/json:
               schema:
@@ -131,29 +127,21 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: "비밀번호 초기화 성공"
-        "401":
-          description: "비밀번호 초기화 실패"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                initFail:
-                  summary: "실패 예시"
-                  value:
-                    status: 401
-                    success: false
-                    message: "비밀번호 초기화 실패"
+                    example: "로그아웃 성공"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /api/auth/sign-up:
+
+  ########################################
+  # 2) 회원가입: POST /api/auth/signup
+  ########################################
+  /api/auth/signup:
     post:
       summary: "회원가입"
       description: |
-        * 다양한 사용자 정보를 입력받아 회원가입을 진행합니다.
-        * 동일 아이디(identifier)나 전화번호(phone)가 이미 존재하는 경우 `409` 에러를 반환합니다.
+        * 다양한 사용자 정보를 입력받아 회원가입 진행.
+        * 성공 시 새 사용자 리소스가 생성되므로, 일반적으로 201(Created)을 반환함.
+        * 아이디(identifier)나 전화번호(콜)가 이미 존재하면 409(CONFLICT) 에러 반환.
       operationId: signUp
       requestBody:
         required: true
@@ -169,16 +157,18 @@ paths:
                   identifier: "newUser"
                   password: "mypassword"
                   name: "새 유저"
-                  gender: "F"
+                  gender: "남"
                   phone: "010-1111-2222"
                   branch: "서울점"
-                  age: 25
-                  career: 3
-                  entrap: false
-                  refund_account: "110-123-456789"
-                  receipt_info: true
-                  trainer_id: 1
-                  refund_bank: "KB은행"
+                  birth: "20010304"
+                  ntrp: "3.5"
+                  career: "3"
+                  refundAccount: "110-123-456789"
+                  refundBank: "KB국민은행"
+                  receiptInfo: "발급"
+                  receiptType: "개인"
+                  receiptNumber: "3123231212"
+                  trainerId: "1223431"
               duplicateIdentifier:
                 summary: "이미 존재하는 identifier"
                 value:
@@ -186,8 +176,8 @@ paths:
                   password: "mypassword"
                   name: "기존 유저"
       responses:
-        "200":
-          description: "회원가입 성공"
+        "201":
+          description: "회원가입 성공(새로운 사용자 리소스 생성)"
           content:
             application/json:
               schema:
@@ -195,7 +185,7 @@ paths:
                 properties:
                   status:
                     type: integer
-                    example: 200
+                    example: 201
                   success:
                     type: boolean
                     example: true
@@ -206,11 +196,11 @@ paths:
                 success:
                   summary: "회원가입 성공 예시"
                   value:
-                    status: 200
+                    status: 201
                     success: true
                     message: "회원가입 성공"
-        "409":
-          description: "이미 존재하는 아이디 또는 전화번호"
+        "809":
+          description: "이미 존재하는 아이디"
           content:
             application/json:
               schema:
@@ -219,28 +209,46 @@ paths:
                 duplicateIdentifier:
                   summary: "이미 존재하는 아이디"
                   value:
-                    status: 409
+                    status: 809
                     success: false
                     message: "이미 존재하는 아이디입니다."
+        "808":
+          description: "이미 존재하는 전화번호"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
                 duplicatePhone:
                   summary: "이미 존재하는 전화번호"
                   value:
-                    status: 409
+                    status: 808
                     success: false
                     message: "이미 존재하는 전화번호입니다"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /api/auth/modify-info:
+
+  ########################################
+  # 3) 회원정보 수정: PATCH /api/users/{identifier}
+  ########################################
+  /api/users/{identifier}:
     patch:
       summary: "회원 정보 수정"
       description: |
-        * 기본적으로 `password`, `refund_account`, `receipt_info`, `refund_bank`만 수정 가능  
-        * 관리자인 경우 모든 필드를 수정할 수 있습니다.  
-        * 권한 없는 필드 수정 요청 시 403 오류
+        * 기본적으로 `password`, `refund_account`, `receiptInfo`, `refund_bank`만 수정 가능.
+        * 관리자인 경우 더 많은 필드 수정 가능(예: identifier, name, phone 등).
+        * 권한 없는 필드 수정 요청 시 403 오류.
       operationId: modifyInfo
       security:
         - bearerAuth: []
+      parameters:
+        - name: identifier
+          in: path
+          required: true
+          description: "수정 대상 사용자 식별자 (ex: testUser)"
+          schema:
+            type: string
       requestBody:
         required: true
         description: "수정할 정보(JSON)"
@@ -254,7 +262,7 @@ paths:
                 value:
                   password: "newPassword"
                   refund_account: "110-987-654321"
-                  receipt_info: false
+                  receiptInfo: false
                   refund_bank: "우리은행"
               adminEdit:
                 summary: "관리자 권한으로 모든 필드를 수정하는 예시"
@@ -296,12 +304,85 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /api/auth/token:
+
+  ########################################
+  # 4) 비밀번호 초기화: PATCH /api/users/{identifier}/password
+  ########################################
+  /api/users/{identifier}/password:
+    patch:
+      summary: "비밀번호 초기화"
+      description: |
+        * 식별자(`identifier`) 경로 파라미터와 추가 인증 토큰(임시 코드를 body에) 필요.
+        * 헤더에 Access Token을 포함해야 할 수도 있음(서버 정책에 따라).
+      operationId: initPassword
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: identifier
+          in: path
+          required: true
+          description: "비밀번호를 초기화할 사용자 식별자"
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: "비밀번호 초기화를 위한 JSON 데이터(임시 토큰/코드 등)"
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InitPasswordRequest"
+            examples:
+              normal:
+                summary: "정상 입력 예시"
+                value:
+                  token: "인증용_임시_토큰_또는_코드"
+              missingToken:
+                summary: "token 누락"
+                value:
+                  token: ""
+      responses:
+        "200":
+          description: "비밀번호 초기화 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "비밀번호 초기화 성공"
+        "401":
+          description: "비밀번호 초기화 실패 (토큰 불일치 등)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                initFail:
+                  summary: "실패 예시"
+                  value:
+                    status: 401
+                    success: false
+                    message: "비밀번호 초기화 실패"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+
+  ########################################
+  # 5) 토큰 재발급: POST /api/tokens/refresh
+  ########################################
+  /api/tokens/refresh:
     post:
       summary: "Refresh Token을 사용한 Access Token 재발급"
       description: |
-        * 만료된 Access Token을 갱신하기 위해 Refresh Token(RT)을 사용합니다.
-        * 성공 시 새로운 Access Token(`token`)과 갱신된 Refresh Token(`RT`)을 반환합니다.
+        * 만료된 Access Token 갱신을 위해 Refresh Token(RT) 사용.
+        * 성공 시 새로운 Access Token(`token`)과 갱신된 Refresh Token(`RT`) 반환.
       operationId: reIssueToken
       requestBody:
         required: true
@@ -339,7 +420,7 @@ paths:
                     type: string
                     example: "토큰 재발급 성공"
         "401":
-          description: "토큰 재발급 실패"
+          description: "토큰 재발급 실패 (Refresh Token 검증 실패 등)"
           content:
             application/json:
               schema:
@@ -355,27 +436,115 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /api/auth/sign-out:
-    post:
-      summary: "로그아웃"
+
+  ########################################
+  # (추가) 관리자용 API
+  # 6) GET /api/admin/modify-info
+  ########################################
+  /api/admin/modify-info:
+    get:
+      summary: "관리자가 회원들의 정보를 불러오는 API"
       description: |
-        * identifier(아이디)를 받아 로그아웃 처리
-      operationId: signOut
+        * 예: 전체 사용자 목록 조회, 또는 특정 조건에 맞는 사용자들 조회.
+        * 관리자 권한 필요. (SecurityContext에서 ADMIN 여부 확인)
+      operationId: adminGetUsers
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: "관리자용 사용자 목록 조회 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        identifier:
+                          type: string
+                          example: "testUser"
+                        name:
+                          type: string
+                          example: "홍길동"
+                        phone:
+                          type: string
+                          example: "010-1234-5678"
+                        role:
+                          type: string
+                          example: "MEMBER"
+                example:
+                  status: 200
+                  success: true
+                  data:
+                    - identifier: "testUser"
+                      name: "홍길동"
+                      phone: "010-1234-5678"
+                      role: "MEMBER"
+                    - identifier: "adminUser"
+                      name: "관리자"
+                      phone: "010-0000-1111"
+                      role: "ADMIN"
+        "403":
+          description: "권한이 없는 사용자(ADMIN이 아님) 혹은 ban된 사용자"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+            examples:
+              noAdminPermission:
+                summary: "admin 권한 없음"
+                value:
+                  status: 403
+                  success: false
+                  message: "권한이 없습니다(관리자 전용)"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  ########################################
+  # 7) PATCH /api/admin/modify-info/{identifier}
+  ########################################
+  /api/admin/modify-info/{identifier}:
+    patch:
+      summary: "관리자가 특정 사용자의 정보를 수정"
+      description: |
+        * 관리자 권한 필요.
+        * Path Param: 수정 대상 식별자
+        * RequestBody: 수정할 필드들
+      operationId: adminModifyUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: identifier
+          in: path
+          required: true
+          description: "수정 대상 사용자 식별자"
+          schema:
+            type: string
       requestBody:
         required: true
-        description: "로그아웃에 필요한 JSON 데이터"
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/SignOutRequest"
+              $ref: "#/components/schemas/ModifyInfoRequest"
             examples:
-              normal:
-                summary: "정상 로그아웃 예시"
+              adminSample:
+                summary: "관리자가 사용자 정보 수정 예시"
                 value:
-                  identifier: "testUser"
+                  name: "수정된 이름"
+                  phone: "010-9999-8888"
+                  role: "TRAINER"
       responses:
         "200":
-          description: "로그아웃 성공"
+          description: "수정 성공"
           content:
             application/json:
               schema:
@@ -389,10 +558,490 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: "로그아웃 성공"
+                    example: "수정 성공"
+        "403":
+          description: "권한이 없는 사용자(ADMIN이 아님) 혹은 ban된 사용자"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            noAdminPermission:
+              summary: "admin 권한 없음"
+              value:
+                status: 403
+                success: false
+                message: "권한이 없습니다(관리자 전용)"
+        "404":
+          description: "대상 사용자를 찾을 수 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            userNotFound:
+              summary: "존재하지 않는 식별자"
+              value:
+                status: 404
+                success: false
+                message: "해당 사용자를 찾을 수 없습니다"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+    delete:
+      summary: "관리자가 특정 사용자를 삭제"
+      description: |
+        * 관리자 권한 필요.
+        * Path Param: 삭제 대상 식별자
+      operationId: adminDeleteUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: identifier
+          in: path
+          required: true
+          description: "삭제 대상 사용자 식별자"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "삭제 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "사용자 삭제 완료"
+        "403":
+          description: "권한이 없는 사용자(ADMIN이 아님) 혹은 ban된 사용자"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+            examples:
+              noAdminPermission:
+                summary: "admin 권한 없음"
+                value:
+                  status: 403
+                  success: false
+                  message: "권한이 없습니다(관리자 전용)"
+        "404":
+          description: "삭제 대상 사용자를 찾을 수 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+            examples:
+              userNotFound:
+                summary: "존재하지 않는 식별자"
+                value:
+                  status: 404
+                  success: false
+                  message: "해당 사용자를 찾을 수 없습니다"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+
+  ####################################################
+  # 8) 트레이너 배정 On/Off 설정: PATCH /api/admin/trainer-assign
+  ####################################################
+  /api/admin/trainer-assign:
+    patch:
+      summary: "트레이너 배정 권한 On/Off"
+      description: |
+        * 관리자 또는 해당 트레이너 본인이 트레이너 배정 가능 상태를 ON/OFF로 설정.
+        * 매일 새벽 5시, '배정 ON' 상태 트레이너에게 전날 신규가입 회원들이 랜덤 배정됨.
+      operationId: patchTrainerAssign
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        description: "배정 On/Off에 필요한 데이터"
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                trainerId:
+                  type: string
+                  example: "T1234"
+                assignable:
+                  type: boolean
+                  example: true
+            examples:
+              turnOn:
+                summary: "배정 On 예시"
+                value:
+                  trainerId: "T1234"
+                  assignable: true
+              turnOff:
+                summary: "배정 Off 예시"
+                value:
+                  trainerId: "T1234"
+                  assignable: false
+      responses:
+        "200":
+          description: "배정 권한 수정 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "트레이너 배정 상태가 변경되었습니다."
+        "403":
+          description: "권한이 없는 사용자(ADMIN이 아님) 혹은 자기 자신이 아님"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+            examples:
+              noPermission:
+                summary: "본인 또는 관리자 권한이 없음"
+                value:
+                  status: 403
+                  success: false
+                  message: "권한이 없습니다"
+        "404":
+          description: "대상 트레이너를 찾을 수 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+            examples:
+              trainerNotFound:
+                summary: "존재하지 않는 트레이너 ID"
+                value:
+                  status: 404
+                  success: false
+                  message: "해당 트레이너를 찾을 수 없습니다"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+
+  ####################################################
+  # 9) PT (Personal Training) - 회원전용: GET /api/PT/mypt
+  ####################################################
+  /api/PT/mypt:
+    get:
+      summary: "회원이 자신의 PT 목록(세션)을 조회"
+      description: |
+        * 회원이 가진 PT 계약(횟수, 기간), 예약된 스케줄, 담당 트레이너 등의 정보를 조회
+        * '회색(예약)', '파랑(완료요청)', '검정(완료)' 등 상태 정보도 확인 가능
+      operationId: getMyPT
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: "PT 목록 조회 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  success:
+                    type: boolean
+                    example: true
+                  pts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        ptId:
+                          type: string
+                          example: "PT12345"
+                        totalCount:
+                          type: integer
+                          example: 10
+                        usedCount:
+                          type: integer
+                          example: 2
+                        trainerId:
+                          type: string
+                          example: "T1234"
+                        schedules:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              date:
+                                type: string
+                                example: "2025-05-20 14:00"
+                              status:
+                                type: string
+                                example: "RESERVED | REQUESTED | COMPLETED"
+              example:
+                status: 200
+                success: true
+                pts:
+                  - ptId: "PT12345"
+                    totalCount: 10
+                    usedCount: 2
+                    trainerId: "T1234"
+                    schedules:
+                      - date: "2025-05-20 14:00"
+                        status: "RESERVED"
+                      - date: "2025-05-25 14:00"
+                        status: "REQUESTED"
+        "401":
+          description: "인증 실패 (토큰 오류)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+            examples:
+              tokenError:
+                summary: "유효하지 않은 토큰"
+                value:
+                  status: 401
+                  success: false
+                  message: "인증 실패"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+
+  ########################################
+  # 9-1) PT 상세 조회/수정: GET, PATCH /api/PT/mypt/{ptSessionId}
+  ########################################
+  /api/PT/mypt/{ptSessionId}:
+    get:
+      summary: "특정 PT 세션 상세 정보 조회"
+      description: |
+        * 회원이 자신이 가진 PT 세션(단일 세션)에 대한 상세 정보(예: 스케줄, 상태, 남은 횟수 등) 조회.
+      operationId: getMyPTDetail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: ptSessionId
+          in: path
+          required: true
+          description: "세션 식별자"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "세션 상세 조회 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  success:
+                    type: boolean
+                    example: true
+                  ptDetail:
+                    type: object
+                    properties:
+                      ptId:
+                        type: string
+                        example: "PT12345"
+                      totalCount:
+                        type: integer
+                        example: 10
+                      usedCount:
+                        type: integer
+                        example: 2
+                      schedules:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            scheduleId:
+                              type: string
+                              example: "SCH001"
+                            date:
+                              type: string
+                              example: "2025-05-25 14:00"
+                            status:
+                              type: string
+                              example: "RESERVED | REQUESTED | COMPLETED"
+                example:
+                  status: 200
+                  success: true
+                  ptDetail:
+                    ptId: "PT12345"
+                    totalCount: 10
+                    usedCount: 2
+                    schedules:
+                      - scheduleId: "SCH001"
+                        date: "2025-05-25 14:00"
+                        status: "REQUESTED"
+        "404":
+          description: "존재하지 않는 PT 세션"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+            examples:
+              ptSessionNotFound:
+                summary: "세션 식별자 없음"
+                value:
+                  status: 404
+                  success: false
+                  message: "해당 PT 세션을 찾을 수 없습니다."
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    patch:
+      summary: "특정 PT 세션 업데이트 (예: 스케줄 변경/삭제, 완료요청 등)"
+      description: |
+        * 회원(또는 트레이너)에 의해 스케줄 수정, 예약 변경, 완료 요청(REQUESTED) 등 상태 변경.
+        * '완료(검정)' 상태(최종 완료)는 수정/삭제 불가.
+      operationId: patchMyPTDetail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: ptSessionId
+          in: path
+          required: true
+          description: "세션 식별자"
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: "수정할 스케줄 정보 또는 완료 요청 등"
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                scheduleId:
+                  type: string
+                  example: "SCH001"
+                action:
+                  type: string
+                  example: "REQUEST_COMPLETE | CANCEL | UPDATE_SCHEDULE"
+                newDate:
+                  type: string
+                  example: "2025-05-25 15:00"
+            examples:
+              requestComplete:
+                summary: "수업 완료 요청"
+                value:
+                  scheduleId: "SCH001"
+                  action: "REQUEST_COMPLETE"
+              changeSchedule:
+                summary: "스케줄 시간 변경"
+                value:
+                  scheduleId: "SCH001"
+                  action: "UPDATE_SCHEDULE"
+                  newDate: "2025-05-25 15:00"
+      responses:
+        "200":
+          description: "세션 업데이트 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "PT 세션 수정 완료"
+        "403":
+          description: "이미 완료된 세션이거나 수정 권한 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+            examples:
+              noPermission:
+                summary: "완료된 스케줄 수정 불가"
+                value:
+                  status: 403
+                  success: false
+                  message: "이미 완료된 수업은 수정할 수 없습니다."
+        "404":
+          description: "존재하지 않는 세션/스케줄"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+            examples:
+              scheduleNotFound:
+                summary: "스케줄 식별자 없음"
+                value:
+                  status: 404
+                  success: false
+                  message: "해당 스케줄을 찾을 수 없습니다."
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+
+  ####################################################
+  # 10) 직원 공지사항: GET /api/notices/employee
+  ####################################################
+  /api/notices/employee:
+    get:
+      summary: "직원 공지사항(일일 이용권, 랜덤 배정, PT 스케줄 등 안내) 조회"
+      description: |
+        * 앱 또는 웹 관리자 페이지에서 직원들에게 제공되는 공지사항 문구를 조회.
+        * 내용: 일일 이용권(Daily Pass) 정책, 신규회원 랜덤배정 로직, PT 스케줄 예약/진행/완료 안내 등.
+      operationId: getEmployeeNotice
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: "공지사항 조회 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  success:
+                    type: boolean
+                    example: true
+                  notice:
+                    type: string
+                    example: |
+                      - 일일이용권 가격: 16,000원
+                      - 직원이 근무 중일 때만 카드 결제 가능
+                      - 신규회원 랜덤 배정: 매일 새벽 5시
+                      - PT 스케줄 예약, 완료 요청 처리 방법 등...
+              example:
+                status: 200
+                success: true
+                notice: |
+                  1) 일일이용권
+                     - 가격: 16,000원, 직원 근무 중만 가능
+                     - 한달권 우선 권장
+                  2) 회원 배정
+                     - 트레이너 '배정 ON' 상태 -> 새벽 5시에 전날 가입 회원 랜덤 배정
+                     - 미리 트레이너 선택 시 배정 제외
+                  3) PT 스케줄
+                     - 예약(회색) -> 완료요청(파랑) -> 완료(검정)
+                     - 완료된 스케줄은 수정/삭제 불가
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
 components:
   securitySchemes:
@@ -402,6 +1051,9 @@ components:
       bearerFormat: JWT
 
   schemas:
+    ########################################
+    # 요청 스키마들
+    ########################################
     SignInRequest:
       type: object
       required:
@@ -419,12 +1071,8 @@ components:
     InitPasswordRequest:
       type: object
       required:
-        - identifier
         - token
       properties:
-        identifier:
-          type: string
-          example: "testUser"
         token:
           type: string
           example: "인증용_임시_토큰_또는_코드"
@@ -438,13 +1086,14 @@ components:
         - gender
         - phone
         - branch
-        - age
+        - birth
+        - ntrp
         - career
-        - entrap
-        - refund_account
-        - receipt_info
-        - trainer_id
-        - refund_bank
+        - refundAccount
+        - refundBank
+        - receiptInfo
+        - receiptDetail
+        - trainerId
       properties:
         identifier:
           type: string
@@ -465,27 +1114,30 @@ components:
         branch:
           type: string
           example: "서울점"
-        age:
-          type: integer
-          example: 25
+        birth:
+          type: string
+          example: "20020304"
+        ntrp:
+          type: string
+          example: "3.5"
         career:
           type: integer
           example: 3
-        entrap:
-          type: boolean
-          example: false
-        refund_account:
+        refundAccount:
           type: string
           example: "110-123-456789"
-        receipt_info:
-          type: boolean
-          example: true
-        trainer_id:
-          type: integer
-          example: 1
-        refund_bank:
+        refundBank:
           type: string
-          example: "KB은행"
+          example: "KB국민은행"
+        receiptInfo:
+          type: string
+          example: "발급"
+        receiptDetail:
+          type: string
+          example: "개인 : 020304"
+        trainerId:
+          type: string
+          example: "1223431"
 
     ModifyInfoRequest:
       type: object
@@ -494,16 +1146,28 @@ components:
           type: string
           format: password
           example: "newPassword"
-        refund_account:
+        refundAccount:
           type: string
           example: "110-987-654321"
-        receipt_info:
-          type: boolean
-          example: true
-        refund_bank:
+        receiptInfo:
+          type: string
+          example: "발급"
+        refundBank:
           type: string
           example: "우리은행"
-        # 관리자 권한 시 추가 필드를 수정할 수도 있음 (identifier, name, phone, branch 등)
+        phone:
+          type: string
+          example: "010-9999-8888"
+        name:
+          type: string
+          example: "수정된 이름"
+        branch:
+          type: string
+          example: "부산점"
+        role:
+          type: string
+          example: "TRAINER"
+        # 관리자 권한 시 identifier 등 추가 필드 수정 가능
 
     TokenRefreshRequest:
       type: object
@@ -523,6 +1187,9 @@ components:
           type: string
           example: "testUser"
 
+    ########################################
+    # 에러 공통 응답 스키마
+    ########################################
     ErrorResponse:
       type: object
       properties:
@@ -540,6 +1207,9 @@ components:
           example: "T001"
       description: "에러 응답 공통 구조"
 
+  ########################################
+  # 공통 응답 (서버 오류 등)
+  ########################################
   responses:
     InternalServerError:
       description: "서버 내부 오류"
