@@ -1039,20 +1039,35 @@ paths:
                       properties:
                         noticeId:
                           type: integer
-                          example: 1
+                          example: 2
                         title:
                           type: string
-                          example: "[공지] 일일 이용권 안내"
+                          example: "반갑습니다"
                         content:
                           type: string
-                          example: "일일 이용권 가격은 16,000원입니다. 직원 근무 중에만 구매 가능."
+                          example: "반가워요"
                         createdAt:
                           type: string
                           format: date-time
-                          example: "2025-04-29T15:18:11"
+                          example: "2025-04-19T15:18:11"
                         author:
                           type: string
-                          example: "adminUser"
+                          example: "manager2"
+              example:
+                status: 200
+                success: true
+                notices:
+                  - noticeId: 2
+                    title: "반갑습니다"
+                    content: "반가워요"
+                    createdAt: "2025-04-19T15:18:11"
+                    author: "manager2"
+                  - noticeId: 1
+                    title: "[공지] 휴일 안내"
+                    content: "2025년 9월 22일 ~ 2025년 9월 23일 휴관 안내"
+                    createdAt: "2025-04-19T15:03:33"
+                    author: "manager1"
+
         "401":
           description: "인증 실패 (토큰 없음 또는 유효하지 않음)"
           content:
