@@ -1010,13 +1010,14 @@ paths:
   ####################################################
   /api/notices/employee:
     get:
-      summary: "직원 공지사항(일일 이용권, 랜덤 배정, PT 스케줄 등 안내) 조회"
+      summary: "직원 공지사항 조회 API"
       description: |
-        * 앱 또는 웹 관리자 페이지에서 직원들에게 제공되는 공지사항 문구를 조회.
-        * 내용: 일일 이용권(Daily Pass) 정책, 신규회원 랜덤배정 로직, PT 스케줄 예약/진행/완료 안내 등.
+        - 앱 또는 웹 관리자 페이지에서 직원들에게 제공되는 공지사항 문구를 조회합니다.
+        - 일일 이용권 정책, 회원 랜덤 배정, PT 스케줄 안내 등.
+        - JWT 인증이 필요합니다. (SecurityContext에서 인증된 사용자만 접근 가능)
       operationId: getEmployeeNotice
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       responses:
         "200":
           description: "공지사항 조회 성공"
@@ -1031,28 +1032,59 @@ paths:
                   success:
                     type: boolean
                     example: true
-                  notice:
+                  notices:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        noticeId:
+                          type: integer
+                          example: 1
+                        title:
+                          type: string
+                          example: "[공지] 일일 이용권 안내"
+                        content:
+                          type: string
+                          example: "일일 이용권 가격은 16,000원입니다. 직원 근무 중에만 구매 가능."
+                        createdAt:
+                          type: string
+                          format: date-time
+                          example: "2025-04-29T15:18:11"
+                        author:
+                          type: string
+                          example: "adminUser"
+        "401":
+          description: "인증 실패 (토큰 없음 또는 유효하지 않음)"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 401
+                  success:
+                    type: boolean
+                    example: false
+                  message:
                     type: string
-                    example: |
-                      - 일일이용권 가격: 16,000원
-                      - 직원이 근무 중일 때만 카드 결제 가능
-                      - 신규회원 랜덤 배정: 매일 새벽 5시
-                      - PT 스케줄 예약, 완료 요청 처리 방법 등...
-              example:
-                status: 200
-                success: true
-                notice: |
-                  1) 일일이용권
-                     - 가격: 16,000원, 직원 근무 중만 가능
-                     - 한달권 우선 권장
-                  2) 회원 배정
-                     - 트레이너 '배정 ON' 상태 -> 새벽 5시에 전날 가입 회원 랜덤 배정
-                     - 미리 트레이너 선택 시 배정 제외
-                  3) PT 스케줄
-                     - 예약(회색) -> 완료요청(파랑) -> 완료(검정)
-                     - 완료된 스케줄은 수정/삭제 불가
+                    example: "로그인이 필요합니다"
         "500":
-          $ref: "#/components/responses/InternalServerError"
+          description: "서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 500
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "공지사항 조회 중 오류가 발생했습니다"
 
 components:
   securitySchemes:
