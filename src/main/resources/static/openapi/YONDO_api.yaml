@@ -230,12 +230,13 @@ paths:
 
 
   ########################################
-  # 3) 회원정보 수정: PATCH /api/users/{identifier}
+  # 3) 회원정보 수정: PATCH /api/users/modify-info
   ########################################
-  /api/users/{identifier}:
+  /api/users/modify-info:
     patch:
       summary: "회원 정보 수정"
       description: |
+        * 사용자를 토큰에서 추출하여 
         * 기본적으로 `password`, `refund_account`, `receiptInfo`, `refund_bank`만 수정 가능.
         * 관리자인 경우 더 많은 필드 수정 가능(예: identifier, name, phone 등).
         * 권한 없는 필드 수정 요청 시 403 오류.
@@ -243,12 +244,6 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - name: identifier
-          in: path
-          required: true
-          description: "수정 대상 사용자 식별자 (ex: testUser)"
-          schema:
-            type: string
       requestBody:
         required: true
         description: "수정할 정보(JSON)"
