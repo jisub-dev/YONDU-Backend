@@ -1100,6 +1100,186 @@ paths:
                   message:
                     type: string
                     example: "공지사항 조회 중 오류가 발생했습니다"
+  ####################################################
+  # 11) 코트 매칭 API
+  ####################################################
+  /api/court:
+    get:
+      summary: "현재 사용자의 NTRP 기반 매칭 룸 조회"
+      description: |
+        - 로그인한 사용자의 NTRP 등급 기반으로 관련된 코트(매칭 방)를 조회합니다.
+        - 예: 비슷한 수준의 유저들과 매칭된 룸 리스트 조회
+      operationId: getMatchingRooms
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: "매칭 룸 조회 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  success:
+                    type: boolean
+                    example: true
+                  rooms:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MatchingRoomDto"
+        "401":
+          description: "인증 실패 (토큰 없음 또는 만료)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    post:
+      summary: "새 코트(매칭 룸) 생성"
+      operationId: createMatchingRoom
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMatchingRoomRequest"
+      responses:
+        "201":
+          description: "매칭 룸 생성 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: integer, example: 201 }
+                  success: { type: boolean, example: true }
+                  message: { type: string, example: "매칭 룸이 생성되었습니다." }
+        "400":
+          description: "입력값 누락 또는 유효하지 않음"
+        "401":
+          description: "인증 실패"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    patch:
+      summary: "매칭 룸 정보 수정 (방장 전용)"
+      operationId: updateMatchingRoom
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMatchingRoomRequest"
+      responses:
+        "200":
+          description: "수정 성공"
+        "403":
+          description: "방장만 수정 가능"
+        "404":
+          description: "수정할 룸이 없음"
+        "401":
+          description: "인증 실패"
+
+  /api/court/entrance:
+    post:
+      summary: "다른 사용자의 매칭 룸 입장"
+      operationId: enterMatchingRoom
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                matchingRoomId:
+                  type: integer
+                  example: 1
+      responses:
+        "200":
+          description: "입장 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: integer, example: 200 }
+                  success: { type: boolean, example: true }
+                  message: { type: string, example: "매칭 룸에 입장하였습니다." }
+        "403":
+          description: "이미 입장한 사용자"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                alreadyJoined:
+                  summary: "이미 입장한 사용자"
+                  value:
+                    status: 403
+                    success: false
+                    message: "이미 입장한 매칭 룸입니다"
+        "404":
+          description: "매칭 룸 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/court/exit:
+    post:
+      summary: "매칭 룸 퇴장"
+      operationId: exitMatchingRoom
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                matchingRoomId:
+                  type: integer
+                  example: 1
+      responses:
+        "200":
+          description: "퇴장 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: integer, example: 200 }
+                  success: { type: boolean, example: true }
+                  message: { type: string, example: "매칭 룸에서 퇴장하였습니다." }
+        "403":
+          description: "참여하지 않은 사용자"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                notParticipant:
+                  summary: "참여하지 않은 사용자"
+                  value:
+                    status: 403
+                    success: false
+                    message: "해당 매칭 룸에 참여하고 있지 않습니다"
+        "404":
+          description: "매칭 룸 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
 components:
   securitySchemes:
@@ -1244,6 +1424,45 @@ components:
         identifier:
           type: string
           example: "testUser"
+
+    CreateMatchingRoomRequest:
+      type: object
+      required: [courtId, type, ntrpMin, ntrpMax, startTime, endTime]
+      properties:
+        courtId: { type: integer, example: 1 }
+        type: { type: string, example: "2인 단식" }
+        ntrpMin: { type: number, format: float, example: 3.0 }
+        ntrpMax: { type: number, format: float, example: 4.0 }
+        startTime: { type: string, format: date-time, example: "2025-06-01T09:00:00" }
+        endTime: { type: string, format: date-time, example: "2025-06-01T10:00:00" }
+        onOffFlag: { type: boolean, example: true }
+
+    UpdateMatchingRoomRequest:
+      type: object
+      required: [matchingRoomId]
+      properties:
+        matchingRoomId: { type: integer, example: 1 }
+        type: { type: string, example: "2인 단식" }
+        ntrpMin: { type: number, format: float, example: 3.0 }
+        ntrpMax: { type: number, format: float, example: 4.0 }
+        startTime: { type: string, format: date-time, example: "2025-06-01T09:00:00" }
+        endTime: { type: string, format: date-time, example: "2025-06-01T10:00:00" }
+        onOffFlag: { type: boolean, example: true }
+
+    MatchingRoomDto:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        hostId: { type: string, example: "trainer1" }
+        courtId: { type: integer, example: 1 }
+        type: { type: string, example: "2인 단식" }
+        ntrpMin: { type: number, example: 3.0 }
+        ntrpMax: { type: number, example: 4.0 }
+        onOffFlag: { type: boolean, example: true }
+        startTime: { type: string, format: date-time, example: "2025-06-01T09:00:00" }
+        endTime: { type: string, format: date-time, example: "2025-06-01T10:00:00" }
+        createdDate: { type: string, format: date-time, example: "2025-05-18T15:00:00" }
+
 
     ########################################
     # 에러 공통 응답 스키마
