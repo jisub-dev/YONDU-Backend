@@ -15,6 +15,9 @@ public class RoomParticipant {
     @Column(name = "matching_room")
     private Long matchingRoomId;
 
+    @Column(name = "participants_id")
+    private Long participantsId;
+
     @Column(name = "user_id")
     private String userId;
 
