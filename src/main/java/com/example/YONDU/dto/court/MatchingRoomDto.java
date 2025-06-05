@@ -17,7 +17,8 @@ public record MatchingRoomDto(
         Boolean onOffFlag,
         LocalDateTime startTime,
         LocalDateTime endTime,
-        LocalDateTime createdDate
+        LocalDateTime createdDate,
+        LocalDateTime updatedDate
 ) {
     public static MatchingRoomDto from(MatchingRoom room) {
         return MatchingRoomDto.builder()
@@ -31,6 +32,7 @@ public record MatchingRoomDto(
                 .startTime(room.getStartTime())
                 .endTime(room.getEndTime())
                 .createdDate(room.getCreatedDate())
+                .updatedDate(room.getUpdatedDate())
                 .build();
     }
 }

@@ -41,9 +41,6 @@ public class MatchingRoom {
     @Column(name = "ntrp_max", precision = 2, scale = 1)
     private BigDecimal ntrpMax;
 
-    @Column(name = "participants_id")
-    private Integer participantsId; // 사용 여부에 따라 생략 가능
-
     @Column(name = "created_date")
     private LocalDateTime createdDate;
 
