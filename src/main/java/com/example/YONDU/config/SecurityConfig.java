@@ -1,6 +1,7 @@
 package com.example.YONDU.config;
 
 import com.example.YONDU.repository.UserRepository;
+import com.example.YONDU.security.CustomAccessDeniedHandler;
 import com.example.YONDU.security.JwtAuthenticationFilter;
 import com.example.YONDU.service.JwtService;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationManagerResolver;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -20,11 +22,13 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity // 이 어노테이션이 @PreAuthorize를 활성화합니다.
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final CustomAccessDeniedHandler accessDeniedHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -33,21 +37,21 @@ public class SecurityConfig {
 
     /**
      * 비밀번호 암호화용 Bean만 있던 부분을 확장,
-     * Spring Security FilterChain을 정의해 JWTAuthenticationFilter를 등록합니다.
+     * Spring Security FilterChain을 정의해 JWTAuthenticationFilter를 등록
      */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         // Security 설정
         http
-                .csrf(csrf -> csrf.disable())// CSRF 비활성(필요 시 활성화)
+                .csrf(csrf -> csrf.disable())
                 .cors(cors -> {
                     // 1. CORS 정책 생성
                     CorsConfiguration config = new CorsConfiguration();
-                    config.addAllowedOrigin("*");// 허용할 도메인 //FIXME: 도메인 서버 IP로 변경, 예시:(http://localhost:3000)
+                    config.addAllowedOrigin("*");// 허용할 도메인
                     config.addAllowedMethod("*");// 허용할 HTTP 메서드
                     config.addAllowedHeader("*");// 허용할 헤더
-                    config.setAllowCredentials(false);// 인증 정보 포함 여부 //FIXME: 세션 또는 쿠키를 쓰지 않으면 false로 , 원래 true였음
+                    config.setAllowCredentials(false);// 인증 정보 포함 여부
 
                     // 2. URL별로 어떤 CORS 정책을 적용할 것인지 source에 등록
                     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -63,6 +67,10 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-resources/**", "/openapi/**").permitAll()
                         // 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated()
+                )
+                // 권한 부족시 handler
+                .exceptionHandling(exception ->
+                        exception.accessDeniedHandler(accessDeniedHandler)
                 )
                 // 커스텀 JwtAuthenticationFilter 등록
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);

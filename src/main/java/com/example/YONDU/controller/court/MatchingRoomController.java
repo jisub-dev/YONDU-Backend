@@ -52,9 +52,7 @@ public class MatchingRoomController {
         // 페이지는 1부터 시작하지만 내부적으로는 0부터 시작
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by("createdDate").descending());
 
-        BigDecimal userNtrp = new BigDecimal(userDetails.getUser().getNtrp());
-
-        // 모든 방을 페이지네이션으로 조회 (NTRP 필터링은 나중에 적용 가능)
+        // 모든 방을 페이지네이션으로 조회
         Page<MatchingRoom> roomPage = roomRepo.findAll(pageable);
 
         // 각 방의 참여자 정보를 포함한 DTO로 변환

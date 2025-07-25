@@ -70,7 +70,7 @@ public class JwtService {
         }
     }
 
-    // Refresh Token으로 새 Access Token 발급 (role도 같이 넣기)
+    // Refresh Token으로 새 Access Token 발급 (role 포함)
     public String refreshToken(String refreshToken, Role role) {
         try {
             Claims claims = Jwts.parserBuilder()
@@ -85,7 +85,7 @@ public class JwtService {
             return null;
         }
     }
-    
+
     // 토큰에서 사용자 식별자 추출
     public String extractIdentifier(String token) {
         try {
